@@ -23,32 +23,32 @@ void handle_type_R(struct memory *mem, int start_addr, FILE *log_file, struct sy
 }
 
 struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct symbols* symbols) {
-  // Mask to get last 7 bites
-  // 0x7F = 0b01111111 = 127 decimal (extracts bits [6:0])
+  // 1
+  // 2
   uint32_t opcode = memory_rd_b(mem, start_addr) & 0x7F;
 
-  // Determine type of instruction by using opcodes from instruction set
+  // 3
   switch (opcode) {
-    case 0x37:  // 55 decimal - LUI (Load Upper Immediate)
-    case 0x17:  // 23 decimal - AUIPC (Add Upper Immediate to PC)
+    case 0x37:  // 4
+    case 0x17:  // 5
       handle_type_U(mem, start_addr, log_file, symbols);
-      break; 
-    case 0x6F:  // 111 decimal - JAL (Jump and Link)
+      break;
+    case 0x6F:  // 6
       handle_type_J(mem, start_addr, log_file, symbols);
-      break; 
-    case 0x63:  // 99 decimal - Branches (BEQ, BNE, BLT, BGE, BLTU, BGEU)
+      break;
+    case 0x63:  // 7
       handle_type_B(mem, start_addr, log_file, symbols);
-      break; 
-    case 0x67:  // 103 decimal - JALR (Jump and Link Register)
-    case 0x03:  // 3 decimal - Loads (LB, LH, LW, LBU, LHU)
-    case 0x13:  // 19 decimal - I-type arithmetic (ADDI, SLTI, XORI, ORI, ANDI, SLLI, SRLI, SRAI)
-    case 0x73:  // 115 decimal - System (ECALL, EBREAK)
+      break;
+    case 0x67:  // 8
+    case 0x03:  // 9
+    case 0x13:  // 10
+    case 0x73:  // 11
       handle_type_I(mem, start_addr, log_file, symbols);
-      break; 
-    case 0x23:  // 35 decimal - Stores (SB, SH, SW)
+      break;
+    case 0x23:  // 12
       handle_type_S(mem, start_addr, log_file, symbols);
-      break; 
-    case 0x33:  // 51 decimal - R-type (ADD, SUB, etc.) and RV32M (MUL, DIV, etc.)
+      break;
+    case 0x33:  // 13
       handle_type_R(mem, start_addr, log_file, symbols);
       break; 
   }
