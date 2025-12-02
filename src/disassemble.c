@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "disassemble.h"
 #include "read_elf.h"
@@ -8,8 +9,14 @@
 void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_size,
                  struct symbols *symbols) {
 
+  // Reset result string so it doesn't contain the previous instruction
+  memset(result, '\0', buf_size);
+
+  // Add the symbol to result, if applicable
   const char *symbol = symbols_value_to_sym(symbols, addr);
-  printf("%s\n", symbol);
+  if (symbol != NULL) {
+    sprintf(result, "%-25s:", symbol);
+  }
 
   uint32_t opcode =  instruction & 0x7F; //takes the opcode from [0:6]
   switch (opcode) {
@@ -24,10 +31,12 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
     case 0x03:  // 0000011 - I-type
     case 0x13:  // 0010011 - I-type
     case 0x73:  // 1110011 - I-type
+
       break;
     case 0x23:  // 0100011 - S-type
       break;
     case 0x33:  // 0110011 - R-type
       break;
   }
+
 }
