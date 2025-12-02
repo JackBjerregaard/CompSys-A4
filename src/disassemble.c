@@ -125,7 +125,13 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
 
 void handle_type_S(uint32_t instruction, char *result) {}
 
-void handle_type_R(uint32_t instruction, char *result) {}
+void handle_type_R(uint32_t instruction, char *result) {
+  uint32_t rd = (instruction >> 7) & 0x1F; 
+  uint32_t f3 = (instruction >> 12) & 0x7; 
+  uint32_t rs1 = (instruction >> 15) & 0x1F; 
+  uint32_t rs2 = (instruction >> 20) & 0x1F; 
+  uint32_t f7 = (instruction >> 25) & 0x7F; 
+}
 
 void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_size,
                  struct symbols *symbols) {
