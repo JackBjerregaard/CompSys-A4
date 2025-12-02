@@ -6,9 +6,40 @@
 #include "disassemble.h"
 #include "read_elf.h"
 
-void handle_type_U(uint32_t instruction, char *result) {}
+void handle_type_U(uint32_t instruction, char *result) {
+  uint32_t opcode = instruction & 0x7F;
+  uint32_t rd = (instruction >> 7) & 0x1F;
+  uint32_t imm = instruction & 0xFFFFF000;
 
-void handle_type_J(uint32_t instruction, char *result) {}
+  switch (opcode) {
+  case 0x37:
+    sprintf(result + strlen(result), "%s x%d,0x%x", "lui", rd, imm >> 12);
+    break;
+  case 0x17:
+    sprintf(result + strlen(result), "%s x%d,0x%x", "auipc", rd, imm >> 12);
+    break;
+  }
+}
+
+void handle_type_J(uint32_t instruction, char *result) {
+  uint32_t rd = (instruction >> 7) & 0x1f;
+
+  uint32_t imm20 = (instruction >> 31) & 0x1;
+  uint32_t imm_10_1 = (instruction >> 21) & 0x3FF;
+  uint32_t imm_11 = (instruction >> 20) & 0x1;
+  uint32_t imm_19_12 = (instruction >> 12) & 0xFF;
+
+  int32_t imm = 0;
+  imm |= (imm20 << 20);
+  imm |= (imm_19_12 << 12);
+  imm |= (imm_11 << 11);
+  imm |= (imm_10_1 << 1);
+
+  if (imm & 0x100000) {
+    imm |= 0xFFE00000;
+  };
+  sprintf(result + strlen(result), "%s x%d, %d", "jal", rd, imm);
+}
 
 void handle_type_B(uint32_t instruction, char *result) {}
 
@@ -17,25 +48,25 @@ void handle_type_I_load(uint32_t instruction, char *result) {
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
   uint32_t f3 = ((instruction >> 12) & 0x7);
-  
+
   switch (f3) {
-    case 0x0:
-      sprintf(result, "%-5s %d %d(%d)", "LB", rd, imm, rs1);
-      break;
-    case 0x1:
-      sprintf(result, "%-5s %d %d(%d)", "LH", rd, imm, rs1);
-      break;
-    case 0x2:
-      sprintf(result, "%-5s %d %d(%d)", "LW", rd, imm, rs1);
-      break;
-    case 0x4:
-      sprintf(result, "%-5s %d %d(%d)", "LBU", rd, imm, rs1);
-      break;
-    case 0x5:
-      sprintf(result, "%-5s %d %d(%d)", "LHU", rd, imm, rs1);
-      break;
-    default:
-      break;
+  case 0x0:
+    sprintf(result, "%-5s %d %d(%d)", "LB", rd, imm, rs1);
+    break;
+  case 0x1:
+    sprintf(result, "%-5s %d %d(%d)", "LH", rd, imm, rs1);
+    break;
+  case 0x2:
+    sprintf(result, "%-5s %d %d(%d)", "LW", rd, imm, rs1);
+    break;
+  case 0x4:
+    sprintf(result, "%-5s %d %d(%d)", "LBU", rd, imm, rs1);
+    break;
+  case 0x5:
+    sprintf(result, "%-5s %d %d(%d)", "LHU", rd, imm, rs1);
+    break;
+  default:
+    break;
   }
 
   // check the last bit of imm and check if we need to set negative
@@ -50,13 +81,13 @@ void handle_type_I_call(uint32_t instruction, char *result) {
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
   uint32_t f3 = ((instruction >> 12) & 0x7);
-  
+
   switch (f3) {
-    case 0x0:
-      sprintf(result, "%-5s", "ECALL");
-      break;
-    default:
-      break;
+  case 0x0:
+    sprintf(result, "%-5s", "ECALL");
+    break;
+  default:
+    break;
   }
 }
 
@@ -66,11 +97,11 @@ void handle_type_I_jump(uint32_t instruction, char *result) {
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
   uint32_t f3 = ((instruction >> 12) & 0x7);
   switch (f3) {
-    case 0x0:
-      sprintf(result, "%-5s %d %d %d", "JALR", rd, rs1, imm);
-      break;
-    default:
-      break;
+  case 0x0:
+    sprintf(result, "%-5s %d %d %d", "JALR", rd, rs1, imm);
+    break;
+  default:
+    break;
   }
 
   // check the last bit of imm and check if we need to set negative
@@ -85,36 +116,36 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
   uint32_t f3 = ((instruction >> 12) & 0x7);
-  
+
   switch (f3) {
-    case 0x0:
-      sprintf(result, "%-5s %d %d %d", "ADDI", rd, rs1, imm);
-      break;
-    case 0x4:
-      sprintf(result, "%-5s %d %d %d", "XORI", rd, rs1, imm);
-      break;
-    case 0x6:
-      sprintf(result, "%-5s %d %d %d", "ORI", rd, rs1, imm);
-      break;
-    case 0x7:
-      sprintf(result, "%-5s %d %d %d", "ANDI", rd, rs1, imm);
-    //case 0x1:
-    //  sprinf(result, "%-5s %d %d %d", "SLLI", rd, rs1, imm);
-    //  break;
-    //case 0x5:
-    //  sprinf(result, "%-5s %d %d %d", "SRLI", rd, rs1, imm);
-    //  break;
-    //case 0x5:
-    //  sprinf(result, "%-5s %d %d %d", "SRAI", rd, rs1, imm);
-    //  break;
-    case 0x2:
-      sprintf(result, "%-5s %d %d %d", "SLTI", rd, rs1, imm);
-      break;
-    case 0x3:
-      sprintf(result, "%-5s %d %d %d", "SLTIU", rd, rs1, imm);
-      break;
-    default:
-      break;
+  case 0x0:
+    sprintf(result, "%-5s %d %d %d", "ADDI", rd, rs1, imm);
+    break;
+  case 0x4:
+    sprintf(result, "%-5s %d %d %d", "XORI", rd, rs1, imm);
+    break;
+  case 0x6:
+    sprintf(result, "%-5s %d %d %d", "ORI", rd, rs1, imm);
+    break;
+  case 0x7:
+    sprintf(result, "%-5s %d %d %d", "ANDI", rd, rs1, imm);
+  // case 0x1:
+  //   sprinf(result, "%-5s %d %d %d", "SLLI", rd, rs1, imm);
+  //   break;
+  // case 0x5:
+  //   sprinf(result, "%-5s %d %d %d", "SRLI", rd, rs1, imm);
+  //   break;
+  // case 0x5:
+  //   sprinf(result, "%-5s %d %d %d", "SRAI", rd, rs1, imm);
+  //   break;
+  case 0x2:
+    sprintf(result, "%-5s %d %d %d", "SLTI", rd, rs1, imm);
+    break;
+  case 0x3:
+    sprintf(result, "%-5s %d %d %d", "SLTIU", rd, rs1, imm);
+    break;
+  default:
+    break;
   }
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x800) {
@@ -126,11 +157,11 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
 void handle_type_S(uint32_t instruction, char *result) {}
 
 void handle_type_R(uint32_t instruction, char *result) {
-  uint32_t rd = (instruction >> 7) & 0x1F; 
-  uint32_t f3 = (instruction >> 12) & 0x7; 
-  uint32_t rs1 = (instruction >> 15) & 0x1F; 
-  uint32_t rs2 = (instruction >> 20) & 0x1F; 
-  uint32_t f7 = (instruction >> 25) & 0x7F; 
+  uint32_t rd = (instruction >> 7) & 0x1F;
+  uint32_t f3 = (instruction >> 12) & 0x7;
+  uint32_t rs1 = (instruction >> 15) & 0x1F;
+  uint32_t rs2 = (instruction >> 20) & 0x1F;
+  uint32_t f7 = (instruction >> 25) & 0x7F;
 }
 
 void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_size,
@@ -145,41 +176,39 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
     sprintf(result, "%-25s:", symbol);
   }
 
-  uint32_t opcode =  instruction & 0x7F; //takes the opcode from [0:6]
+  uint32_t opcode = instruction & 0x7F; // takes the opcode from [0:6]
   switch (opcode) {
-    case 0x37:  // 0110111 - U-type
-    case 0x17:  // 0010111 - U-type
-      handle_type_U(instruction, result);
-      break;
-    case 0x6F:  // 1101111 - J-type
-      handle_type_J(instruction, result);
-      break;
-    case 0x63:  // 1100011 - B-type
-      handle_type_B(instruction, result);
-      break;
+  case 0x37: // 0110111 - U-type
+  case 0x17: // 0010111 - U-type
+    handle_type_U(instruction, result);
+    break;
+  case 0x6F: // 1101111 - J-type
+    handle_type_J(instruction, result);
+    break;
+  case 0x63: // 1100011 - B-type
+    handle_type_B(instruction, result);
+    break;
 
-    
-    case 0x67:  // 1100111 - I-type
-      handle_type_I_jump(instruction, result);
-      break;
+  case 0x67: // 1100111 - I-type
+    handle_type_I_jump(instruction, result);
+    break;
 
-    case 0x03:  // 0000011 - I-type
-      handle_type_I_load(instruction, result);
-      break;
-    case 0x13:  // 0010011 - I-type
-      handle_type_I_imm(instruction, result);
-      break;
-    case 0x73:  // 1110011 - I-type
-      handle_type_I_call(instruction, result);
-      break;
+  case 0x03: // 0000011 - I-type
+    handle_type_I_load(instruction, result);
+    break;
+  case 0x13: // 0010011 - I-type
+    handle_type_I_imm(instruction, result);
+    break;
+  case 0x73: // 1110011 - I-type
+    handle_type_I_call(instruction, result);
+    break;
 
-
-      break;
-    case 0x23:  // 0100011 - S-type
-      handle_type_S(instruction, result);
-      break;
-    case 0x33:  // 0110011 - R-type
-      handle_type_R(instruction, result);
-      break;
+    break;
+  case 0x23: // 0100011 - S-type
+    handle_type_S(instruction, result);
+    break;
+  case 0x33: // 0110011 - R-type
+    handle_type_R(instruction, result);
+    break;
   }
 }
