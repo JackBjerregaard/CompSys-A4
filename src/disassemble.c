@@ -60,7 +60,7 @@ void handle_type_I_call(uint32_t instruction, char *result) {
   }
 }
 
-  void handle_type_I_jump(uint32_t instruction, char *result) {
+void handle_type_I_jump(uint32_t instruction, char *result) {
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
@@ -80,7 +80,7 @@ void handle_type_I_call(uint32_t instruction, char *result) {
   }
 }
 
-void handle_type_i_imm(uint32_t instruction, char *result) {
+void handle_type_I_imm(uint32_t instruction, char *result) {
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
@@ -91,13 +91,13 @@ void handle_type_i_imm(uint32_t instruction, char *result) {
       sprintf(result, "%-5s %d %d %d", "ADDI", rd, rs1, imm);
       break;
     case 0x4:
-      sprinf(result, "%-5s %d %d %d", "XORI", rd, rs1, imm);
+      sprintf(result, "%-5s %d %d %d", "XORI", rd, rs1, imm);
       break;
     case 0x6:
-      sprinf(result, "%-5s %d %d %d", "ORI", rd, rs1, imm);
+      sprintf(result, "%-5s %d %d %d", "ORI", rd, rs1, imm);
       break;
     case 0x7:
-      sprinf(result, "%-5s %d %d %d", "ANDI", rd, rs1, imm);
+      sprintf(result, "%-5s %d %d %d", "ANDI", rd, rs1, imm);
     //case 0x1:
     //  sprinf(result, "%-5s %d %d %d", "SLLI", rd, rs1, imm);
     //  break;
@@ -108,10 +108,10 @@ void handle_type_i_imm(uint32_t instruction, char *result) {
     //  sprinf(result, "%-5s %d %d %d", "SRAI", rd, rs1, imm);
     //  break;
     case 0x2:
-      sprinf(result, "%-5s %d %d %d", "SLTI", rd, rs1, imm);
+      sprintf(result, "%-5s %d %d %d", "SLTI", rd, rs1, imm);
       break;
     case 0x3:
-      sprinf(result, "%-5s %d %d %d", "SLTIU", rd, rs1, imm);
+      sprintf(result, "%-5s %d %d %d", "SLTIU", rd, rs1, imm);
       break;
     default:
       break;
