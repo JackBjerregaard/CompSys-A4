@@ -12,18 +12,115 @@ void handle_type_J(uint32_t instruction, char *result) {}
 
 void handle_type_B(uint32_t instruction, char *result) {}
 
-void handle_type_I(uint32_t instruction, char *result) {
+void handle_type_I_load(uint32_t instruction, char *result) {
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t imm = ((instruction >> 20) & 0xFFF);
+  uint32_t rs1 = ((instruction >> 15) & 0x1F);
+  uint32_t f3 = ((instruction >> 12) & 0x7);
+  
+  switch (f3) {
+    case 0x0:
+      sprintf(result, "%-5s %d %d(%d)", "LB", rd, imm, rs1);
+      break;
+    case 0x1:
+      sprintf(result, "%-5s %d %d(%d)", "LH", rd, imm, rs1);
+      break;
+    case 0x2:
+      sprintf(result, "%-5s %d %d(%d)", "LW", rd, imm, rs1);
+      break;
+    case 0x4:
+      sprintf(result, "%-5s %d %d(%d)", "LBU", rd, imm, rs1);
+      break;
+    case 0x5:
+      sprintf(result, "%-5s %d %d(%d)", "LHU", rd, imm, rs1);
+      break;
+    default:
+      break;
+  }
 
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x800) {
     // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
     imm |= 0xFFFFF000;
   }
+}
 
-  printf("%d\t", rd);
-  printf("%d", imm);
+void handle_type_I_call(uint32_t instruction, char *result) {
+  uint32_t rd = (instruction >> 7) & 0x1F;
+  uint32_t imm = ((instruction >> 20) & 0xFFF);
+  uint32_t rs1 = ((instruction >> 15) & 0x1F);
+  uint32_t f3 = ((instruction >> 12) & 0x7);
+  
+  switch (f3) {
+    case 0x0:
+      sprintf(result, "%-5s", "ECALL");
+      break;
+    default:
+      break;
+  }
+}
+
+  void handle_type_I_jump(uint32_t instruction, char *result) {
+  uint32_t rd = (instruction >> 7) & 0x1F;
+  uint32_t imm = ((instruction >> 20) & 0xFFF);
+  uint32_t rs1 = ((instruction >> 15) & 0x1F);
+  uint32_t f3 = ((instruction >> 12) & 0x7);
+  switch (f3) {
+    case 0x0:
+      sprintf(result, "%-5s %d %d %d", "JALR", rd, rs1, imm);
+      break;
+    default:
+      break;
+  }
+
+  // check the last bit of imm and check if we need to set negative
+  if (imm & 0x800) {
+    // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
+    imm |= 0xFFFFF000;
+  }
+}
+
+void handle_type_i_imm(uint32_t instruction, char *result) {
+  uint32_t rd = (instruction >> 7) & 0x1F;
+  uint32_t imm = ((instruction >> 20) & 0xFFF);
+  uint32_t rs1 = ((instruction >> 15) & 0x1F);
+  uint32_t f3 = ((instruction >> 12) & 0x7);
+  
+  switch (f3) {
+    case 0x0:
+      sprintf(result, "%-5s %d %d %d", "ADDI", rd, rs1, imm);
+      break;
+    case 0x4:
+      sprinf(result, "%-5s %d %d %d", "XORI", rd, rs1, imm);
+      break;
+    case 0x6:
+      sprinf(result, "%-5s %d %d %d", "ORI", rd, rs1, imm);
+      break;
+    case 0x7:
+      sprinf(result, "%-5s %d %d %d", "ANDI", rd, rs1, imm);
+    //case 0x1:
+    //  sprinf(result, "%-5s %d %d %d", "SLLI", rd, rs1, imm);
+    //  break;
+    //case 0x5:
+    //  sprinf(result, "%-5s %d %d %d", "SRLI", rd, rs1, imm);
+    //  break;
+    //case 0x5:
+    //  sprinf(result, "%-5s %d %d %d", "SRAI", rd, rs1, imm);
+    //  break;
+    case 0x2:
+      sprinf(result, "%-5s %d %d %d", "SLTI", rd, rs1, imm);
+      break;
+    case 0x3:
+      sprinf(result, "%-5s %d %d %d", "SLTIU", rd, rs1, imm);
+      break;
+    default:
+      break;
+  }
+  // check the last bit of imm and check if we need to set negative
+  if (imm & 0x800) {
+    // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
+    imm |= 0xFFFFF000;
+  }
 }
 
 void handle_type_S(uint32_t instruction, char *result) {}
@@ -54,11 +151,23 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
     case 0x63:  // 1100011 - B-type
       handle_type_B(instruction, result);
       break;
+
+    
     case 0x67:  // 1100111 - I-type
+      handle_type_I_jump(instruction, result);
+      break;
+
     case 0x03:  // 0000011 - I-type
+      handle_type_I_load(instruction, result);
+      break;
     case 0x13:  // 0010011 - I-type
+      handle_type_I_imm(instruction, result);
+      break;
     case 0x73:  // 1110011 - I-type
-      handle_type_I(instruction, result);
+      handle_type_I_call(instruction, result);
+      break;
+
+
       break;
     case 0x23:  // 0100011 - S-type
       handle_type_S(instruction, result);
