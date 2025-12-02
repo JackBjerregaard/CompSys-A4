@@ -23,11 +23,12 @@ void handle_type_R(struct memory *mem, int start_addr, FILE *log_file, struct sy
 }
 
 struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct symbols* symbols) {
-  // 1
-  // 2
-  uint32_t opcode = memory_rd_b(mem, start_addr) & 0x7F;
 
-  // 3
+  uint32_t pc = start_addr; 
+  long int insn_count = 0; 
+
+  
+  uint32_t opcode = memory_rd_b(mem, start_addr) & 0x7F;
   switch (opcode) {
     case 0x37:  // 0110111 - U-type
     case 0x17:  // 0010111 - U-type
