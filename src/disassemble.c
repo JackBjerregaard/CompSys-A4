@@ -31,7 +31,17 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
     case 0x03:  // 0000011 - I-type
     case 0x13:  // 0010011 - I-type
     case 0x73:  // 1110011 - I-type
+      uint32_t rd = (instruction >> 7) & 0x1F;
+      uint32_t imm = ((instruction >> 20) & 0xFFF);
 
+      // check the last bit of imm and check if we need to set negative
+      if (imm & 0x800) {
+        // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
+        imm |= 0xFFFFF000;
+      }
+
+      //printf("%ud", rd);
+      printf("%d", imm);
       break;
     case 0x23:  // 0100011 - S-type
       break;
