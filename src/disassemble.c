@@ -142,7 +142,7 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
     break;
   case 0x1:
     if (f7 == 0x00) {
-      sprintf(result, "%-5s %d %d %u", "SLLI", rd, rs1, shamt);
+      sprintf(result, "%-5s %d %d %d", "SLLI", rd, rs1, shamt);
     }
     break;
   case 0x5:
