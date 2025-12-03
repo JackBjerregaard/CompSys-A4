@@ -118,6 +118,8 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
   uint32_t f3 = ((instruction >> 12) & 0x7);
+  uint32_t f7 = (instruction >> 25) & 0x7F; 
+  uint32_t shamt = (instruction >> 20) & 0x1F;
 
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x800) {
@@ -137,15 +139,19 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
     break;
   case 0x7:
     sprintf(result, "%-5s %d %d %d", "ANDI", rd, rs1, imm);
-  // case 0x1:
-  //   sprinf(result, "%-5s %d %d %d", "SLLI", rd, rs1, imm);
-  //   break;
-  // case 0x5:
-  //   sprinf(result, "%-5s %d %d %d", "SRLI", rd, rs1, imm);
-  //   break;
-  // case 0x5:
-  //   sprinf(result, "%-5s %d %d %d", "SRAI", rd, rs1, imm);
-  //   break;
+    break;
+  case 0x1:
+    if (f7 == 0x00) {
+      sprintf(result, "%-5s %d %d %u", "SLLI", rd, rs1, shamt);
+    }
+    break;
+  case 0x5:
+    if (f7 == 0x00) {
+      sprintf(result, "%-5s %d %d %d", "SRLI", rd, rs1, shamt);
+    } else if (f7 == 0x20) {
+      sprintf(result, "%-5s %d %d %d", "SRAI", rd, rs1, shamt);
+    }
+    break;
   case 0x2:
     sprintf(result, "%-5s %d %d %d", "SLTI", rd, rs1, imm);
     break;
@@ -189,6 +195,7 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
     handle_type_B(instruction, instruction_text);
     break;
 
+  // All I-type
   case 0x67:  // 1100111 - I-type
     handle_type_I_jump(instruction, instruction_text);
     break;
@@ -203,9 +210,12 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
     handle_type_I_call(instruction, instruction_text);
     break;
 
+  // All S-type
   case 0x23:  // 0100011 - S-type
     handle_type_S(instruction, instruction_text);
     break;
+  
+  // All R-type
   case 0x33:  // 0110011 - R-type
     handle_type_R(instruction, instruction_text);
     break;
