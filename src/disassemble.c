@@ -78,6 +78,18 @@ void handle_type_B(uint32_t instruction, char *result, uint32_t addr) {
     case 0x1:
       sprintf(result, "BNE %s, %s, %x", REGISTERS[rs1], REGISTERS[rs2], (addr + imm));
       break;
+    case 0x4:
+      sprintf(result, "BLT %s, %s, %x", REGISTERS[rs1], REGISTERS[rs2], (addr + imm));
+      break;
+    case 0x5:
+      sprintf(result, "BGE %s, %s, %x", REGISTERS[rs1], REGISTERS[rs2], (addr + imm));
+      break;
+    case 0x6:
+      sprintf(result, "BLTU %s, %s, %x", REGISTERS[rs1], REGISTERS[rs2], (addr + imm));
+      break;
+    case 0x7:
+      sprintf(result, "BGEU %s, %s, %x", REGISTERS[rs1], REGISTERS[rs2], (addr + imm));
+      break;
   }
 }
 
