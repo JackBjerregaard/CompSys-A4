@@ -43,9 +43,9 @@ void handle_type_J(uint32_t instruction, char *result, uint32_t addr) {
   imm |= (imm_10_1 << 1);
 
   // check the last bit of imm and check if we need to set negative
-  if (imm & 0x80000) {
+  if (imm & 0x100000) {
     // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
-    imm |= 0xFFF00000;
+    imm |= 0xFFE00000;
   }
 
   sprintf(result + strlen(result), "%s %s, %x", "JAL", REGISTERS[rd], (imm + addr));
@@ -64,9 +64,9 @@ void handle_type_B(uint32_t instruction, char *result, uint32_t addr) {
   imm |= (imm_4_1 << 1);
 
   // check the last bit of imm and check if we need to set negative
-  if (imm & 0x800) {
+  if (imm & 0x1000) {
     // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
-    imm |= 0xFFFFF000;
+    imm |= 0xFFFFE000;
   }
 
   uint32_t f3 = (instruction >> 12) & 0x7;
@@ -74,7 +74,8 @@ void handle_type_B(uint32_t instruction, char *result, uint32_t addr) {
   uint32_t rs2 = (instruction >> 20) & 0x1F;
   switch (f3) {
     case 0x0:
-      sprintf(result, "BEQ %s %s %x", REGISTERS[rs1], REGISTERS[rs2], (addr + imm));
+      sprintf(result, "BEQ %s, %s, %x", REGISTERS[rs1], REGISTERS[rs2], (addr + imm));
+      break; 
     case 0x1:
       sprintf(result, "BNE %s, %s, %x", REGISTERS[rs1], REGISTERS[rs2], (addr + imm));
       break;
@@ -156,7 +157,7 @@ void handle_type_I_jump(uint32_t instruction, char *result, uint32_t addr) {
 
   switch (f3) {
   case 0x0:
-    sprintf(result, "%s %s, %s, %x", "JALR", REGISTERS[rd], REGISTERS[rs1], (addr + imm));
+    sprintf(result, "%s %s, %d(%s)", "JALR", REGISTERS[rd], (int32_t)imm, REGISTERS[rs1]);
     break;
   default:
     break;
@@ -227,13 +228,13 @@ void handle_type_S(uint32_t instruction, char *result) {
 
   switch (f3) {
   case 0x0:
-    sprintf(result, "%s, %s, %d(%s)", "SB", REGISTERS[rs2], imm, REGISTERS[rs1]);
+    sprintf(result, "%s %s, %d(%s)", "SB", REGISTERS[rs2], (int32_t)imm, REGISTERS[rs1]);
     break;
   case 0x1:
-    sprintf(result, "%s, %s, %d(%s)", "SH", REGISTERS[rs2], imm, REGISTERS[rs1]);
+    sprintf(result, "%s %s, %d(%s)", "SH", REGISTERS[rs2], (int32_t)imm, REGISTERS[rs1]);
     break;
   case 0x2:
-    sprintf(result, "%s, %s, %d(%s)", "SW", REGISTERS[rs2], imm, REGISTERS[rs1]);
+    sprintf(result, "%s %s, %d(%s)", "SW", REGISTERS[rs2], (int32_t)imm, REGISTERS[rs1]);
     break;
   default:
     break;
