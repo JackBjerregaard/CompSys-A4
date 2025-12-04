@@ -28,7 +28,7 @@ void handle_type_U(uint32_t instruction, char *result) {
   }
 }
 
-void handle_type_J(uint32_t instruction, char *result) {
+void handle_type_J(uint32_t instruction, char *result, uint32_t addr) {
   uint32_t rd = (instruction >> 7) & 0x1f;
 
   uint32_t imm20 = (instruction >> 31) & 0x1;
@@ -42,27 +42,43 @@ void handle_type_J(uint32_t instruction, char *result) {
   imm |= (imm_11 << 11);
   imm |= (imm_10_1 << 1);
 
-  if (imm & 0x100000) {
-    imm |= 0xFFE00000;
-  };
-  sprintf(result + strlen(result), "%s %s, %d", "JAL", REGISTERS[rd], imm);
+  // check the last bit of imm and check if we need to set negative
+  if (imm & 0x80000) {
+    // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
+    imm |= 0xFFF00000;
+  }
+
+  sprintf(result + strlen(result), "%s %s, %x", "JAL", REGISTERS[rd], (imm + addr));
 }
 
-void handle_type_B(uint32_t instruction, char *result) {
+void handle_type_B(uint32_t instruction, char *result, uint32_t addr) {
   uint32_t imm_11 = (instruction >> 7) & 0x1;
   uint32_t imm_4_1 = (instruction >> 8) & 0xF;
   uint32_t imm_10_5 = (instruction >> 25) & 0x3F;
   uint32_t imm_12 = (instruction >> 31) & 0x1;
+
+  uint32_t imm = 0;
+  imm |= (imm_12 << 12);
+  imm |= (imm_11 << 11);
+  imm |= (imm_10_5 << 5);
+  imm |= (imm_4_1 << 1);
+
+  // check the last bit of imm and check if we need to set negative
+  if (imm & 0x800) {
+    // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
+    imm |= 0xFFFFF000;
+  }
+
   uint32_t f3 = (instruction >> 12) & 0x7;
   uint32_t rs1 = (instruction >> 15) & 0x1F;
   uint32_t rs2 = (instruction >> 20) & 0x1F;
-
-  int32_t imm = 0;
-  imm |= (imm_12 << 11);
-  imm |= (imm_11 << 10);
-  imm |= (imm_10_5 << 4);
-  imm |= (imm_4_1 << 0);
-  printf("%d\n", imm);
+  switch (f3) {
+    case 0x0:
+      sprintf(result, "BEQ %s %s %x", REGISTERS[rs1], REGISTERS[rs2], (addr + imm));
+    case 0x1:
+      sprintf(result, "BNE %s, %s, %x", REGISTERS[rs1], REGISTERS[rs2], (addr + imm));
+      break;
+  }
 }
 
 void handle_type_I_load(uint32_t instruction, char *result) {
@@ -114,7 +130,7 @@ void handle_type_I_call(uint32_t instruction, char *result) {
   }
 }
 
-void handle_type_I_jump(uint32_t instruction, char *result) {
+void handle_type_I_jump(uint32_t instruction, char *result, uint32_t addr) {
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
@@ -128,7 +144,7 @@ void handle_type_I_jump(uint32_t instruction, char *result) {
 
   switch (f3) {
   case 0x0:
-    sprintf(result, "%s %s, %s, %d", "JALR", REGISTERS[rd], REGISTERS[rs1], imm);
+    sprintf(result, "%s %s, %s, %x", "JALR", REGISTERS[rd], REGISTERS[rs1], (addr + imm));
     break;
   default:
     break;
@@ -300,15 +316,15 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
     handle_type_U(instruction, instruction_text);
     break;
   case 0x6F:  // 1101111 - J-type
-    handle_type_J(instruction, instruction_text);
+    handle_type_J(instruction, instruction_text, addr);
     break;
   case 0x63:  // 1100011 - B-type
-    handle_type_B(instruction, instruction_text);
+    handle_type_B(instruction, instruction_text, addr);
     break;
 
   // All I-type
   case 0x67:  // 1100111 - I-type
-    handle_type_I_jump(instruction, instruction_text);
+    handle_type_I_jump(instruction, instruction_text, addr);
     break;
 
   case 0x03:  // 0000011 - I-type
