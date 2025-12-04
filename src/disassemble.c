@@ -188,10 +188,10 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
 void handle_type_S(uint32_t instruction, char *result) {
   uint32_t imm_11_5 = (instruction >> 25) & 0x7F;
   uint32_t imm_4_0 = (instruction >> 7) & 0x1F;
+  uint32_t imm = (imm_11_5 << 5) | imm_4_0;
   uint32_t f3 = (instruction >> 12) & 0x7;
   uint32_t rs1 = (instruction >> 15) & 0x1F; 
   uint32_t rs2 = (instruction >> 20) & 0x1F;
-  uint32_t imm = (imm_11_5 << 5) | imm_4_0;
  
   if (imm & 0x800) {
     imm |= 0xFFFFF000;
