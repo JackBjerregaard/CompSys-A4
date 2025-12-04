@@ -199,13 +199,13 @@ void handle_type_S(uint32_t instruction, char *result) {
 
   switch (f3) {
   case 0x0:
-    sprintf(result, "%s %s %d(%s)", "SB", REGISTERS[rs2], imm, REGISTERS[rs1]);
+    sprintf(result, "%s, %s, %d(%s)", "SB", REGISTERS[rs2], imm, REGISTERS[rs1]);
     break;
   case 0x1:
-    sprintf(result, "%s %s %d(%s)", "SH", REGISTERS[rs2], imm, REGISTERS[rs1]);
+    sprintf(result, "%s, %s, %d(%s)", "SH", REGISTERS[rs2], imm, REGISTERS[rs1]);
     break;
   case 0x2:
-    sprintf(result, "%s %s %d(%s)", "SW", REGISTERS[rs2], imm, REGISTERS[rs1]);
+    sprintf(result, "%s, %s, %d(%s)", "SW", REGISTERS[rs2], imm, REGISTERS[rs1]);
     break;
   default:
     break;
