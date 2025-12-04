@@ -185,7 +185,32 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
   }
 }
 
-void handle_type_S(uint32_t instruction, char *result) {}
+void handle_type_S(uint32_t instruction, char *result) {
+  uint32_t imm_11_5 = (instruction >> 25) & 0x7F;
+  uint32_t imm_4_0 = (instruction >> 7) & 0x1F;
+  uint32_t f3 = (instruction >> 12) & 0x7;
+  uint32_t rs1 = (instruction >> 15) & 0x1F; 
+  uint32_t rs2 = (instruction >> 20) & 0x1F;
+  uint32_t imm = (imm_11_5 << 5) | imm_4_0;
+ 
+  if (imm & 0x800) {
+    imm |= 0xFFFFF000;
+  }
+
+  switch (f3) {
+  case 0x0:
+    sprintf(result, "%s %s %d(%s)", "SB", REGISTERS[rs2], imm, REGISTERS[rs1]);
+    break;
+  case 0x1:
+    sprintf(result, "%s %s %d(%s)", "SH", REGISTERS[rs2], imm, REGISTERS[rs1]);
+    break;
+  case 0x2:
+    sprintf(result, "%s %s %d(%s)", "SW", REGISTERS[rs2], imm, REGISTERS[rs1]);
+    break;
+  default:
+    break;
+  }
+}
 
 void handle_type_R(uint32_t instruction, char *result) {
   uint32_t rd = (instruction >> 7) & 0x1F;
