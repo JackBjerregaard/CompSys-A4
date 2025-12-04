@@ -6,6 +6,13 @@
 #include "disassemble.h"
 #include "read_elf.h"
 
+const char *REGISTERS[] = {
+  "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+  "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
+  "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
+  "t3", "t4", "t5", "t6"
+};
+
 void handle_type_U(uint32_t instruction, char *result) {
   uint32_t opcode = instruction & 0x7F;
   uint32_t rd = (instruction >> 7) & 0x1F;
@@ -13,10 +20,10 @@ void handle_type_U(uint32_t instruction, char *result) {
 
   switch (opcode) {
   case 0x37:
-    sprintf(result + strlen(result), "%s x%d,0x%x", "lui", rd, imm >> 12);
+    sprintf(result + strlen(result), "%s %s, 0x%x", "LUI", REGISTERS[rd], imm >> 12);
     break;
   case 0x17:
-    sprintf(result + strlen(result), "%s x%d,0x%x", "auipc", rd, imm >> 12);
+    sprintf(result + strlen(result), "%s %s, 0x%x", "AUIPC", REGISTERS[rd], imm >> 12);
     break;
   }
 }
@@ -38,10 +45,25 @@ void handle_type_J(uint32_t instruction, char *result) {
   if (imm & 0x100000) {
     imm |= 0xFFE00000;
   };
-  sprintf(result + strlen(result), "%s x%d, %d", "jal", rd, imm);
+  sprintf(result + strlen(result), "%s %s, %d", "JAL", REGISTERS[rd], imm);
 }
 
-void handle_type_B(uint32_t instruction, char *result) {}
+void handle_type_B(uint32_t instruction, char *result) {
+  uint32_t imm_11 = (instruction >> 7) & 0x1;
+  uint32_t imm_4_1 = (instruction >> 8) & 0xF;
+  uint32_t imm_10_5 = (instruction >> 25) & 0x3F;
+  uint32_t imm_12 = (instruction >> 31) & 0x1;
+  uint32_t f3 = (instruction >> 12) & 0x7;
+  uint32_t rs1 = (instruction >> 15) & 0x1F;
+  uint32_t rs2 = (instruction >> 20) & 0x1F;
+
+  int32_t imm = 0;
+  imm |= (imm_12 << 11);
+  imm |= (imm_11 << 10);
+  imm |= (imm_10_5 << 4);
+  imm |= (imm_4_1 << 0);
+  printf("%d\n", imm);
+}
 
 void handle_type_I_load(uint32_t instruction, char *result) {
   uint32_t rd = (instruction >> 7) & 0x1F;
@@ -57,19 +79,19 @@ void handle_type_I_load(uint32_t instruction, char *result) {
 
   switch (f3) {
   case 0x0:
-    sprintf(result, "%-5s %d %d(%d)", "LB", rd, imm, rs1);
+    sprintf(result, "%s %s, %d(%s)", "LB", REGISTERS[rd], imm, REGISTERS[rs1]);
     break;
   case 0x1:
-    sprintf(result, "%-5s %d %d(%d)", "LH", rd, imm, rs1);
+    sprintf(result, "%s %s, %d(%s)", "LH", REGISTERS[rd], imm, REGISTERS[rs1]);
     break;
   case 0x2:
-    sprintf(result, "%-5s %d %d(%d)", "LW", rd, imm, rs1);
+    sprintf(result, "%s %s, %d(%s)", "LW", REGISTERS[rd], imm, REGISTERS[rs1]);
     break;
   case 0x4:
-    sprintf(result, "%-5s %d %d(%d)", "LBU", rd, imm, rs1);
+    sprintf(result, "%s %s, %d(%s)", "LBU", REGISTERS[rd], imm, REGISTERS[rs1]);
     break;
   case 0x5:
-    sprintf(result, "%-5s %d %d(%d)", "LHU", rd, imm, rs1);
+    sprintf(result, "%s %s, %d(%s)", "LHU", REGISTERS[rd], imm, REGISTERS[rs1]);
     break;
   default:
     break;
@@ -85,7 +107,7 @@ void handle_type_I_call(uint32_t instruction, char *result) {
 
   switch (f3) {
   case 0x0:
-    sprintf(result, "%-5s", "ECALL");
+    sprintf(result, "%s", "ECALL");
     break;
   default:
     break;
@@ -106,7 +128,7 @@ void handle_type_I_jump(uint32_t instruction, char *result) {
 
   switch (f3) {
   case 0x0:
-    sprintf(result, "%-5s %d %d %d", "JALR", rd, rs1, imm);
+    sprintf(result, "%s %s, %s, %d", "JALR", REGISTERS[rd], REGISTERS[rs1], imm);
     break;
   default:
     break;
@@ -129,34 +151,34 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
 
   switch (f3) {
   case 0x0:
-    sprintf(result, "%-5s %d %d %d", "ADDI", rd, rs1, imm);
+    sprintf(result, "%s %s, %s, %d", "ADDI", REGISTERS[rd], REGISTERS[rs1], imm);
     break;
   case 0x4:
-    sprintf(result, "%-5s %d %d %d", "XORI", rd, rs1, imm);
+    sprintf(result, "%s %s, %s, %d", "XORI", REGISTERS[rd], REGISTERS[rs1], imm);
     break;
   case 0x6:
-    sprintf(result, "%-5s %d %d %d", "ORI", rd, rs1, imm);
+    sprintf(result, "%s %s, %s, %d", "ORI", REGISTERS[rd], REGISTERS[rs1], imm);
     break;
   case 0x7:
-    sprintf(result, "%-5s %d %d %d", "ANDI", rd, rs1, imm);
+    sprintf(result, "%s %s, %s, %d", "ANDI", REGISTERS[rd], REGISTERS[rs1], imm);
     break;
   case 0x1:
     if (f7 == 0x00) {
-      sprintf(result, "%-5s %d %d %d", "SLLI", rd, rs1, shamt);
+      sprintf(result, "%s %s, %s, %d", "SLLI", REGISTERS[rd], REGISTERS[rs1], shamt);
     }
     break;
   case 0x5:
     if (f7 == 0x00) {
-      sprintf(result, "%-5s %d %d %d", "SRLI", rd, rs1, shamt);
+      sprintf(result, "%s %s, %s, %d", "SRLI", REGISTERS[rd], REGISTERS[rs1], shamt);
     } else if (f7 == 0x20) {
-      sprintf(result, "%-5s %d %d %d", "SRAI", rd, rs1, shamt);
+      sprintf(result, "%s %s, %s, %d", "SRAI", REGISTERS[rd], REGISTERS[rs1], shamt);
     }
     break;
   case 0x2:
-    sprintf(result, "%-5s %d %d %d", "SLTI", rd, rs1, imm);
+    sprintf(result, "%s %s, %s, %d", "SLTI", REGISTERS[rd], REGISTERS[rs1], imm);
     break;
   case 0x3:
-    sprintf(result, "%-5s %d %d %d", "SLTIU", rd, rs1, imm);
+    sprintf(result, "%s %s, %s, %d", "SLTIU", REGISTERS[rd], REGISTERS[rs1], imm);
     break;
   default:
     break;
@@ -171,6 +193,70 @@ void handle_type_R(uint32_t instruction, char *result) {
   uint32_t rs1 = (instruction >> 15) & 0x1F;
   uint32_t rs2 = (instruction >> 20) & 0x1F;
   uint32_t f7 = (instruction >> 25) & 0x7F;
+
+  if (f7 != 0x01) {
+    switch (f3) {
+      case 0x0:
+        if (f7 == 0x00) {
+          sprintf(result, "ADD %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        } else {
+          sprintf(result, "SUB %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        }
+        break;
+      case 0x4:
+        sprintf(result, "XOR %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x6:
+        sprintf(result, "OR %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x7:
+        sprintf(result, "AND %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x1:
+        sprintf(result, "SLL %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x5:
+        if (f7 == 0x00) {
+          sprintf(result, "SRL %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        } else {
+          sprintf(result, "SRA %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        }
+        break;
+      case 0x2:
+        sprintf(result, "SLT %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x3:
+        sprintf(result, "SLTU %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+    }
+  } else {
+    switch (f3) {
+      case 0x0:
+        sprintf(result, "MUL %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x1:
+        sprintf(result, "MULH %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x2:
+        sprintf(result, "MULSU %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x3:
+        sprintf(result, "MULU %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x4:
+        sprintf(result, "DIV %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x5:
+        sprintf(result, "DIVU %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x6:
+        sprintf(result, "REM %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+      case 0x7:
+        sprintf(result, "REMU %s, %s, %s", REGISTERS[rd], REGISTERS[rs1], REGISTERS[rs2]);
+        break;
+    }
+  }
 }
 
 void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_size,
@@ -224,8 +310,8 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
   // Add the symbol to result, if applicable
   const char *symbol = symbols_value_to_sym(symbols, addr);
   if (symbol != NULL) {
-    sprintf(result, "%-25s: %s", symbol, instruction_text);
+    sprintf(result, "%-20s:   %s", symbol, instruction_text);
   } else {
-    sprintf(result, "%-25s %s", "", instruction_text);
+    sprintf(result, "%-21s   %s", "", instruction_text);
   }
 }
