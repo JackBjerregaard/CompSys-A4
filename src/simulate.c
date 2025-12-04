@@ -5,7 +5,22 @@
 #include "simulate.h"
 #include "disassemble.h"
 
+int running = 1;
+int current = 0;
+
 void simulate_U(struct memory *mem, uint32_t instruction) {
+  uint32_t opcode = instruction & 0x7F;
+  uint32_t rd = (instruction >> 7) & 0x1F;
+  uint32_t imm = instruction & 0xFFFFF000;
+
+  switch (opcode) {
+  case 0x37:
+    memory_wr_w(mem, current >> 7, rd); // Insert to rd 
+    memory_wr_w(mem, current >> 12, imm);   
+    break;
+  case 0x17:
+    break;
+  }
 }
 
 void simulate_J(struct memory *mem, uint32_t instruction) {}
@@ -20,10 +35,10 @@ void simulate_R(struct memory *mem, int start_addr, FILE *log_file, struct symbo
 
 struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct symbols *symbols) {
   long int insn_count = 0;
-  int running = 1;
-
+  current = start_addr; // Get the first instruction
+  
   while (running) { // keep running until syscall to exit
-    uint32_t full_instruction = memory_rd_w(mem, start_addr);
+    uint32_t full_instruction = memory_rd_w(mem, current);
     uint32_t opcode = full_instruction & 0x7F;
     switch (opcode) {
     case 0x37: // 0110111 - U-type
