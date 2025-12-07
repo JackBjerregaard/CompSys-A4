@@ -6,6 +6,7 @@
 #include "memory.h"
 #include "simulate.h"
 #include "disassemble.h"
+#include "read_elf.h"
 
 const char *REGISTERS_NAMES[] = {
   "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
@@ -16,7 +17,9 @@ const char *REGISTERS_NAMES[] = {
 
 int running = 1;
 int current;
-uint32_t registers[32];
+uint32_t registers[32] = {0};
+char log_str[100] = {0};
+char jump_str[10] = {0};
 
 void simulate_U(struct memory *mem, uint32_t instruction) {
   uint32_t opcode = instruction & 0x7F;
@@ -353,46 +356,67 @@ void simulate_R(struct memory *mem, uint32_t instruction) {
 
 struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct symbols *symbols) {
   long int insn_count = 0;
-  memset(registers, 0, 32);
   current = start_addr; // Get the first instruction
+  strcpy(jump_str, "=>");
   
   while (running) { // keep running until syscall to exit
     registers[0] = 0; // make sure register 0 is always 0
-    uint32_t full_instruction = memory_rd_w(mem, current);
-    uint32_t opcode = full_instruction & 0x7F;
+    uint32_t instruction = memory_rd_w(mem, current);
+    uint32_t opcode = instruction & 0x7F;
     insn_count++;
+    int old_current = current;
+
+    if (log_file) {
+      char disassembly[100] = {0};
+      disassemble(current, instruction, disassembly, 100, symbols);
+      fprintf(log_file, "  %5ld %2s %8x : %08X       %s        %s\n", 
+              insn_count,
+              jump_str,
+              current,
+              instruction,
+              disassembly,
+              log_str);
+      strcpy(jump_str, "");
+      strcpy(log_str, "");
+    }
+
     switch (opcode) {
       case 0x37: // 0110111 - U-type
       case 0x17: // 0010111 - U-type
-        simulate_U(mem, full_instruction);
+        simulate_U(mem, instruction);
         break;
       case 0x6F: // 1101111 - J-type
-        simulate_J(mem, full_instruction);
+        simulate_J(mem, instruction);
         break;
       case 0x63: // 1100011 - B-type
-        simulate_B(mem, full_instruction);
+        simulate_B(mem, instruction);
         break;
 
       // All I-type
       case 0x67:  // 1100111 - I-type
-        simulate_I_jump(mem, full_instruction);
+        simulate_I_jump(mem, instruction);
         break;
       case 0x03:  // 0000011 - I-type
-        simulate_I_load(mem, full_instruction);
+        simulate_I_load(mem, instruction);
         break;
       case 0x13:  // 0010011 - I-type
-        simulate_I_imm(mem, full_instruction);
+        simulate_I_imm(mem, instruction);
         break;
       case 0x73:  // 1110011 - I-type
-        simulate_I_call(mem, full_instruction);
+        simulate_I_call(mem, instruction);
         break;
 
       case 0x23: // 0100011 - S-type
-        simulate_S(mem, full_instruction);
+        simulate_S(mem, instruction);
         break;
       case 0x33: // 0110011 - R-type
-        simulate_R(mem, full_instruction);
+        simulate_R(mem, instruction);
         break;
+    }
+
+    // check if jumped
+    if (current != old_current + 4) {
+      strcpy(jump_str, "=>");
     }
   }
 
