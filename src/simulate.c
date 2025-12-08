@@ -29,6 +29,7 @@ struct BranchInformation {
 int which_predictor = 0; // 1=NT, 2 = BFNT //1=NT, 2 = BFNT
 long int predictions = 0;
 long int mispredictions = 0;
+char *table;
 
 int running = 1;
 int current;
@@ -543,6 +544,6 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
     printf("Total branches: %ld\n", predictions);
     printf("Mispredictions: %ld\n", mispredictions);
     printf("Accuracy: %.2f%%\n", 100.0 * (predictions - mispredictions) / predictions);
-  }
+  } 
   return (struct Stat){.insns = insn_count};
 }

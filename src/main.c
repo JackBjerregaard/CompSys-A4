@@ -8,6 +8,7 @@
 #include <time.h>
 
 extern int which_predictor;
+extern char *table;
 
 void terminate(const char *error)
 {
@@ -71,17 +72,19 @@ int main(int argc, char *argv[])
 {
   struct memory *mem = memory_create();
   argc = pass_args_to_program(mem, argc, argv);
-  if (argc == 2 || argc == 3 || argc == 4)
+  if (argc == 2 || argc == 3 || argc == 4 || argc == 5)
   {
     FILE *log_file = NULL;
     FILE *prof_file = NULL;
 
     //checks for predictor - run with ./sim file.elf p(predictor (1-4)) TODO: Still need to change it to accept table sizes for p3, p4 :w
-    if (argc >= 3 && argv[2][0] == '-' && argv[2][1] == 'p') 
+    if (argc >= 4 && !strcmp(argv[2], "-pre"))
     {
-      which_predictor = argv[2][2] - '0';
+      which_predictor = atoi(argv[3]); 
+      if (argc == 5) {
+        table = argv[4];
+      }
     }
-
     if (argc == 4 && !strcmp(argv[2], "-l"))
     {
       log_file = fopen(argv[3], "w");
