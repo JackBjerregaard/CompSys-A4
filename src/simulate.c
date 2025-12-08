@@ -47,6 +47,20 @@ void predictor_nt_update(struct BranchInformation *branch) {
     mispredictions++;
   };
 }
+void predictor_btfnt_update(struct BranchInformation *branch) {
+  predictions++;
+
+  int prediction;
+  if (branch->offset < 0) { //if offset <0 - loop, most likey branch is taken
+    prediction = 1;
+  } else { //branch target is forward
+    prediction = 0; 
+  }
+  // check if it happens
+  if (prediction != branch->taken) {
+    mispredictions++;
+  };
+}
 
 void simulate_U(struct memory *mem, uint32_t instruction) {
   uint32_t opcode = instruction & 0x7F;
@@ -196,6 +210,9 @@ void simulate_B(struct memory *mem, uint32_t instruction) {
 
   if (which_predictor == 1) {
     predictor_nt_update(&branch);
+  } else if (which_predictor == 2) {
+    predictor_btfnt_update(&branch);
+    ;
   }
 }
 
@@ -509,13 +526,10 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
       strcpy(jump_str, "");
     }
   }
-
-  if (which_predictor == 1) {
+  if (which_predictor != 0) {
     printf("Total branches: %ld\n", predictions);
     printf("Mispredictions: %ld\n", mispredictions);
-    printf("Accuracy: %.2f%%\n",
-           100.0 * (predictions - mispredictions) / predictions);
+    printf("Accuracy: %.2f%%\n", 100.0 * (predictions - mispredictions) / predictions);
   }
-
   return (struct Stat){.insns = insn_count};
 }
