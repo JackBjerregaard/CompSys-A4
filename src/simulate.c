@@ -13,6 +13,17 @@ const char *REGISTERS_NAMES[] = {"zero", "ra", "sp",  "gp",  "tp", "t0", "t1", "
                                  "a6",   "a7", "s2",  "s3",  "s4", "s5", "s6", "s7",
                                  "s8",   "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
 
+
+struct BranchInformation {
+  uint32_t pc; //adress of branch instruction 
+  int32_t offset; //for BFNT
+  uint32_t traget;  
+  int taken; 
+}; 
+
+//predictor state 
+int 
+
 int running = 1;
 int current;
 uint32_t registers[32];
