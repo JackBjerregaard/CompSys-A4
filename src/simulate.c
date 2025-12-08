@@ -21,8 +21,11 @@ struct BranchInformation {
   int taken; 
 }; 
 
-//predictor state 
-int 
+//predictor  
+int which_predictor = 0; //1=NT, 2 = BFNT //1=NT, 2 = BFNT
+long int predictions = 0 ;
+long int mispredictions = 0; 
+
 
 int running = 1;
 int current;
