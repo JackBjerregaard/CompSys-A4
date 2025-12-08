@@ -471,6 +471,7 @@ void simulate_R(struct memory *mem, uint32_t instruction) {
 }
 
 struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct symbols *symbols) {
+  printf("%s", table);
   long int insn_count = 0;
   current = start_addr;
   strcpy(jump_str, "=>");
