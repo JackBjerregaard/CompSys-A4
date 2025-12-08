@@ -74,15 +74,19 @@ void predictor_bimodal_update(struct BranchInformation *branch) {
   else if (strcmp(table_choose, "1k") == 0) index_bits = 10; 
   else if (strcmp(table_choose, "4k") == 0) index_bits = 12; 
   else if (strcmp(table_choose, "16k") == 0) index_bits = 14; 
+  else {
+    fprintf(stderr, "Unknown table size: '%s'\n", table_choose);
+    return;
+  }
 
   // convert to bits
-  uint8_t bits = 1 << index_bits;
+  int bits = 1 << index_bits;
 
   // initiatlise table 
   if (table == NULL) {
     table = (uint8_t *)calloc(bits, sizeof(uint8_t));
     for (int i = 0; i < bits; i++) {
-      table[i] = 2; // default to weakly taken bits: 10
+      table[i] = 1; // default to weakly not taken bits: 01
     }
   }
 
@@ -90,10 +94,20 @@ void predictor_bimodal_update(struct BranchInformation *branch) {
   uint32_t index = (branch->pc >> 2) & (bits - 1); 
 
   // if type taken, then set to 1, otherwise keep 0 for NT types
-  uint8_t prediction = (table[index] >= 2) ? 1 : 0; 
+  int prediction = (table[index] >= 2) ? 1 : 0; 
 
   if (prediction != branch->taken) {
     mispredictions++;
+  }
+
+  if (branch->taken) {
+    if (table[index] < 3) {
+      table[index]++;
+    }
+  } else {
+    if (table[index] > 0) {
+      table[index]--;
+    }
   }
 }
 
