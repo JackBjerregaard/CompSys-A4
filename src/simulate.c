@@ -13,19 +13,17 @@ const char *REGISTERS_NAMES[] = {"zero", "ra", "sp",  "gp",  "tp", "t0", "t1", "
                                  "a6",   "a7", "s2",  "s3",  "s4", "s5", "s6", "s7",
                                  "s8",   "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
 
-
 struct BranchInformation {
-  uint32_t pc; //adress of branch instruction 
-  int32_t offset; //for BFNT
-  uint32_t traget;  
-  int taken; 
-}; 
+  uint32_t pc;    // adress of branch instruction
+  int32_t offset; // for BFNT
+  uint32_t target;
+  int taken;
+};
 
-//predictor  
-int which_predictor = 0; //1=NT, 2 = BFNT //1=NT, 2 = BFNT
-long int predictions = 0 ;
-long int mispredictions = 0; 
-
+// predictor
+int which_predictor = 0; // 1=NT, 2 = BFNT //1=NT, 2 = BFNT
+long int predictions = 0;
+long int mispredictions = 0;
 
 int running = 1;
 int current;
@@ -38,6 +36,16 @@ void log_register_edit(uint32_t rd) {
   if (rd != 0) { // writing to 0 is always zero
     sprintf(log_str, "R[%2d] <- %x", rd, registers[rd]);
   }
+}
+
+void predictor_nt_update(struct BranchInformation *branch) {
+  predictions++;
+  int prediction = 0; // assume it wasnt taken to begin with
+
+  // check if it happens
+  if (prediction != branch->taken) {
+    mispredictions++;
+  };
 }
 
 void simulate_U(struct memory *mem, uint32_t instruction) {
@@ -108,64 +116,86 @@ void simulate_B(struct memory *mem, uint32_t instruction) {
   uint32_t rs1 = (instruction >> 15) & 0x1F;
   uint32_t rs2 = (instruction >> 20) & 0x1F;
 
+  struct BranchInformation branch;
+  branch.pc = current;
+  branch.offset = (int32_t)imm;
+  branch.target = current + (int32_t)imm;
+  branch.taken = 0;
+
   switch (f3) {
   case 0x0: // BEQ
     if (registers[rs1] == registers[rs2]) {
       sprintf(log_str, "{T}");
       current += (int32_t)imm;
+      branch.taken = 1; // mark as taken
     } else {
       sprintf(log_str, "{_}");
       current += 4;
+      branch.taken = 0; // mark as not taken
     }
     break;
   case 0x1: // BNE
     if (registers[rs1] != registers[rs2]) {
       sprintf(log_str, "{T}");
       current += (int32_t)imm;
+      branch.taken = 1; // mark as taken
     } else {
       sprintf(log_str, "{_}");
       current += 4;
+      branch.taken = 0; // mark as not taken
     }
     break;
   case 0x4: // BLT
     if ((int32_t)registers[rs1] < (int32_t)registers[rs2]) {
       sprintf(log_str, "{T}");
       current += (int32_t)imm;
+      branch.taken = 1;
     } else {
       sprintf(log_str, "{_}");
       current += 4;
+      branch.taken = 0;
     }
     break;
   case 0x5: // BGE
     if ((int32_t)registers[rs1] >= (int32_t)registers[rs2]) {
       sprintf(log_str, "{T}");
       current += (int32_t)imm;
+      branch.taken = 1;
     } else {
       sprintf(log_str, "{_}");
       current += 4;
+      branch.taken = 0;
     }
     break;
   case 0x6: // BLTU
     if (registers[rs1] < registers[rs2]) {
       sprintf(log_str, "{T}");
       current += (int32_t)imm;
+      branch.taken = 1;
     } else {
       sprintf(log_str, "{_}");
       current += 4;
+      branch.taken = 0;
     }
     break;
   case 0x7: // BGEU
     if (registers[rs1] >= registers[rs2]) {
       sprintf(log_str, "{T}");
       current += (int32_t)imm;
+      branch.taken = 1;
     } else {
       sprintf(log_str, "{_}");
       current += 4;
+      branch.taken = 0;
     }
     break;
   default:
     current += 4;
     break;
+  }
+
+  if (which_predictor == 1) {
+    predictor_nt_update(&branch);
   }
 }
 
@@ -478,6 +508,13 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
     } else {
       strcpy(jump_str, "");
     }
+  }
+
+  if (which_predictor == 1) {
+    printf("Total branches: %ld\n", predictions);
+    printf("Mispredictions: %ld\n", mispredictions);
+    printf("Accuracy: %.2f%%\n",
+           100.0 * (predictions - mispredictions) / predictions);
   }
 
   return (struct Stat){.insns = insn_count};
