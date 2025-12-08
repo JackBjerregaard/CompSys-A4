@@ -70,7 +70,8 @@ void predictor_bimodal_update(struct BranchInformation *branch) {
   predictions++;
 
   int index_bits;
-  if (strcmp(table_choose, "256") == 0) index_bits = 8; 
+  if (strcmp(table_choose, "tiny") == 0) index_bits = 2;
+  else if (strcmp(table_choose, "256") == 0) index_bits = 8; 
   else if (strcmp(table_choose, "1k") == 0) index_bits = 10; 
   else if (strcmp(table_choose, "4k") == 0) index_bits = 12; 
   else if (strcmp(table_choose, "16k") == 0) index_bits = 14; 
@@ -567,7 +568,7 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
 
     // print after to make sure we have current instr
     if (log_file) {
-      fprintf(log_file, "  %5ld %2s %8x : %08X       %-60s %s\n", insn_count, jump_str, instr_addr,
+      fprintf(log_file, "  %5ld %2s %8x : %08x       %-60s %s\n", insn_count, jump_str, instr_addr,
               instruction, disassembly, log_str);
       strcpy(log_str, "");
     }

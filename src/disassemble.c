@@ -48,7 +48,14 @@ void handle_type_J(uint32_t instruction, char *result, uint32_t addr) {
     imm |= 0xFFE00000;
   }
 
-  sprintf(result + strlen(result), "%s %s, %x", "JAL", REGISTERS[rd], (imm + addr));
+  // Use pseudo instruction CALL and J instead of JAL to match handed out sim output
+  if (rd == 0) { // for empty returns
+    sprintf(result, "J %x", (imm + addr));
+  } else if (rd == 1) { // for function calls
+    sprintf(result, "CALL %x", (imm + addr));
+  } else {
+    sprintf(result + strlen(result), "%s %s, %x", "JAL", REGISTERS[rd], (imm + addr));
+  }
 }
 
 void handle_type_B(uint32_t instruction, char *result, uint32_t addr) {
@@ -154,13 +161,11 @@ void handle_type_I_jump(uint32_t instruction, char *result, uint32_t addr) {
     // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
     imm |= 0xFFFFF000;
   }
-
-  switch (f3) {
-  case 0x0:
+  
+  if (rd == 0 && rs1 == 1 && imm == 0) { // Use RET for jumps to return address and discarding value
+    sprintf(result, "RET");
+  } else {
     sprintf(result, "%s %s, %d(%s)", "JALR", REGISTERS[rd], (int32_t)imm, REGISTERS[rs1]);
-    break;
-  default:
-    break;
   }
 }
 
@@ -359,7 +364,11 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
   case 0x33:  // 0110011 - R-type
     handle_type_R(instruction, instruction_text);
     break;
+  default:
+    sprintf(instruction_text, "Unknown Instruction");
+    break;
   }
+
 
   // Add the symbol to result, if applicable
   const char *symbol = symbols_value_to_sym(symbols, addr);
