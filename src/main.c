@@ -8,7 +8,7 @@
 #include <time.h>
 
 extern int which_predictor;
-extern char *table;
+extern char *table_choose;
 
 void terminate(const char *error)
 {
@@ -78,10 +78,12 @@ int main(int argc, char *argv[])
     FILE *prof_file = NULL;
 
     //checks for predictor - run with ./sim file.elf p(predictor (1-4)) TODO: Still need to change it to accept table sizes for p3, p4 :w
-    if (argc == 5 && !strcmp(argv[2], "-pre"))
+    if (argc >= 4 && !strcmp(argv[2], "-pre"))
     {
       which_predictor = atoi(argv[3]); 
-      table = argv[4];
+      if (argc == 5) {
+        table_choose = argv[4];
+      }
     }
     if (argc == 4 && !strcmp(argv[2], "-l"))
     {

@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -7,11 +8,6 @@
 #include "memory.h"
 #include "read_elf.h"
 #include "simulate.h"
-
-#define TABLE_SIZE_256 256
-#define TABLE_SIZE_1K 1000
-#define TABLE_SIZE_4K 4000
-#define TABLE_SIZE_16K 16000
 
 const char *REGISTERS_NAMES[] = {"zero", "ra", "sp",  "gp",  "tp", "t0", "t1", "t2",
                                  "s0",   "s1", "a0",  "a1",  "a2", "a3", "a4", "a5",
@@ -29,7 +25,8 @@ struct BranchInformation {
 int which_predictor = 0; // 1=NT, 2 = BFNT //1=NT, 2 = BFNT
 long int predictions = 0;
 long int mispredictions = 0;
-char *table;
+char *table_choose = NULL;
+uint8_t *table = NULL;
 
 int running = 1;
 int current;
@@ -72,7 +69,32 @@ void predictor_btfnt_update(struct BranchInformation *branch) {
 void predictor_bimodal_update(struct BranchInformation *branch) {
   predictions++;
 
+  int index_bits;
+  if (strcmp(table_choose, "256") == 0) index_bits = 8; 
+  else if (strcmp(table_choose, "1k") == 0) index_bits = 10; 
+  else if (strcmp(table_choose, "4k") == 0) index_bits = 12; 
+  else if (strcmp(table_choose, "16k") == 0) index_bits = 14; 
 
+  // convert to bits
+  uint8_t bits = 1 << index_bits;
+
+  // initiatlise table 
+  if (table == NULL) {
+    table = (uint8_t *)calloc(bits, sizeof(uint8_t));
+    for (int i = 0; i < bits; i++) {
+      table[i] = 2; // default to weakly taken bits: 10
+    }
+  }
+
+  // only get last 2 bits
+  uint32_t index = (branch->pc >> 2) & (bits - 1); 
+
+  // if type taken, then set to 1, otherwise keep 0 for NT types
+  uint8_t prediction = (table[index] >= 2) ? 1 : 0; 
+
+  if (prediction != branch->taken) {
+    mispredictions++;
+  }
 }
 
 void simulate_U(struct memory *mem, uint32_t instruction) {
@@ -471,7 +493,6 @@ void simulate_R(struct memory *mem, uint32_t instruction) {
 }
 
 struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct symbols *symbols) {
-  printf("%s", table);
   long int insn_count = 0;
   current = start_addr;
   strcpy(jump_str, "=>");
@@ -542,9 +563,11 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
     }
   }
   if (which_predictor != 0) {
+    printf("predictor: %d %s\n", which_predictor, table_choose);
     printf("Total branches: %ld\n", predictions);
     printf("Mispredictions: %ld\n", mispredictions);
     printf("Accuracy: %.2f%%\n", 100.0 * (predictions - mispredictions) / predictions);
   } 
+  free(table);
   return (struct Stat){.insns = insn_count};
 }
