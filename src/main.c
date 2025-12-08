@@ -7,6 +7,8 @@
 #include <string.h>
 #include <time.h>
 
+extern int which_predictor;
+
 void terminate(const char *error)
 {
   printf("%s\n", error);
@@ -73,6 +75,13 @@ int main(int argc, char *argv[])
   {
     FILE *log_file = NULL;
     FILE *prof_file = NULL;
+
+    //checks for predictor - run with ./sim file.elf p(predictor (1-4)) TODO: Still need to change it to accept table sizes for p3, p4 :w
+    if (argc >= 3 && argv[2][0] == '-' && argv[2][1] == 'p') 
+    {
+      which_predictor = argv[2][2] - '0';
+    }
+
     if (argc == 4 && !strcmp(argv[2], "-l"))
     {
       log_file = fopen(argv[3], "w");
