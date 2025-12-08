@@ -8,10 +8,10 @@
 #include "read_elf.h"
 #include "simulate.h"
 
-const char *REGISTERS_NAMES[] = {
-    "zero", "ra", "sp", "gp", "tp",  "t0",  "t1", "t2", "s0", "s1", "a0",
-    "a1",   "a2", "a3", "a4", "a5",  "a6",  "a7", "s2", "s3", "s4", "s5",
-    "s6",   "s7", "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
+const char *REGISTERS_NAMES[] = {"zero", "ra", "sp",  "gp",  "tp", "t0", "t1", "t2",
+                                 "s0",   "s1", "a0",  "a1",  "a2", "a3", "a4", "a5",
+                                 "a6",   "a7", "s2",  "s3",  "s4", "s5", "s6", "s7",
+                                 "s8",   "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
 
 int running = 1;
 int current;
@@ -21,7 +21,7 @@ char jump_str[10] = {0};
 
 // Helper function for logging whenever a reg is edited
 void log_register_edit(uint32_t rd) {
-  if (rd != 0) {
+  if (rd != 0) { // writing to 0 is always zero
     sprintf(log_str, "R[%2d] <- %x", rd, registers[rd]);
   }
 }
@@ -300,18 +300,15 @@ void simulate_S(struct memory *mem, uint32_t instruction) {
   switch (f3) {
   case 0x0: // SB
     memory_wr_b(mem, (int32_t)registers[rs1] + imm, registers[rs2]);
-    sprintf(log_str, "%x -> Mem[%x]", registers[rs2] & 0xFF,
-            (int32_t)registers[rs1] + imm);
+    sprintf(log_str, "%x -> Mem[%x]", registers[rs2] & 0xFF, (int32_t)registers[rs1] + imm);
     break;
   case 0x1: // SH
     memory_wr_h(mem, (int32_t)registers[rs1] + imm, registers[rs2]);
-    sprintf(log_str, "%x -> Mem[%x]", registers[rs2] & 0xFFFF,
-            (int32_t)registers[rs1] + imm);
+    sprintf(log_str, "%x -> Mem[%x]", registers[rs2] & 0xFFFF, (int32_t)registers[rs1] + imm);
     break;
   case 0x2: // SW
     memory_wr_w(mem, (int32_t)registers[rs1] + imm, registers[rs2]);
-    sprintf(log_str, "%x -> Mem[%x]", registers[rs2],
-            (int32_t)registers[rs1] + imm);
+    sprintf(log_str, "%x -> Mem[%x]", registers[rs2], (int32_t)registers[rs1] + imm);
     break;
   }
   current += 4;
@@ -353,8 +350,7 @@ void simulate_R(struct memory *mem, uint32_t instruction) {
       }
       break;
     case 0x2: // SLT
-      registers[rd] =
-          ((int32_t)registers[rs1] < (int32_t)registers[rs2]) ? 1 : 0;
+      registers[rd] = ((int32_t)registers[rs1] < (int32_t)registers[rs2]) ? 1 : 0;
       break;
     case 0x3: // SLTU
       registers[rd] = (registers[rs1] < registers[rs2]) ? 1 : 0;
@@ -399,8 +395,7 @@ void simulate_R(struct memory *mem, uint32_t instruction) {
   current += 4;
 }
 
-struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file,
-                     struct symbols *symbols) {
+struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct symbols *symbols) {
   long int insn_count = 0;
   current = start_addr;
   strcpy(jump_str, "=>");
@@ -459,8 +454,8 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file,
 
     // print after to make sure we have current instr
     if (log_file) {
-      fprintf(log_file, "  %5ld %2s %8x : %08X       %-60s %s\n", insn_count,
-              jump_str, instr_addr, instruction, disassembly, log_str);
+      fprintf(log_file, "  %5ld %2s %8x : %08X       %-60s %s\n", insn_count, jump_str, instr_addr,
+              instruction, disassembly, log_str);
       strcpy(log_str, "");
     }
 
