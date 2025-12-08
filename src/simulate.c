@@ -507,6 +507,8 @@ void simulate_R(struct memory *mem, uint32_t instruction) {
 }
 
 struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct symbols *symbols) {
+  predictions = 0;
+  mispredictions = 0;
   long int insn_count = 0;
   current = start_addr;
   strcpy(jump_str, "=>");
@@ -583,5 +585,6 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
     printf("Accuracy: %.2f%%\n", 100.0 * (predictions - mispredictions) / predictions);
   } 
   free(table);
+  table = NULL;
   return (struct Stat){.insns = insn_count};
 }
