@@ -27,7 +27,7 @@ long int predictions = 0;
 long int mispredictions = 0;
 char *table_choose = NULL;
 uint8_t *table = NULL;
-uint32_t predictor_history = 0;
+uint32_t predictor_history = 0; 
 
 int running = 1;
 int current;
@@ -71,9 +71,7 @@ void predictor_bimodal_update(struct BranchInformation *branch) {
   predictions++;
 
   int index_bits;
-  if (strcmp(table_choose, "tiny") == 0)
-    index_bits = 2;
-  else if (strcmp(table_choose, "256") == 0)
+  if (strcmp(table_choose, "256") == 0)
     index_bits = 8;
   else if (strcmp(table_choose, "1k") == 0)
     index_bits = 10;
@@ -144,12 +142,7 @@ void predictor_gshare_update(struct BranchInformation *branch) {
   uint32_t index = ((branch->pc >> 2) ^ predictor_history) & (bits - 1);
 
   // if type taken, then set to 1, otherwise keep 0 for NT types
-  int prediction;
-  if (table[index] >= 2) {
-    prediction = 1;
-  } else {
-    prediction = 0;
-  }
+  int prediction = (table[index] >= 2) ? 1 : 0;
 
   if (prediction != branch->taken) {
     mispredictions++;
@@ -645,6 +638,6 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
     printf("Accuracy: %.2f%%\n", 100.0 * (predictions - mispredictions) / predictions);
   }
   free(table);
-  table = NULL;
+  table = NULL; 
   return (struct Stat){.insns = insn_count};
 }
