@@ -4,12 +4,12 @@ if [ ! -f "./riscv-sim" ]; then
   echo "Getting CompSys simulator..."
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
     echo "linux"
-    wget -O riscv-sim https://github.com/diku-compSys/compSys-e2025/raw/refs/heads/main/tools/riscv-sim/sim-linux
+    curl -L -o riscv-sim https://github.com/diku-compSys/compSys-e2025/raw/refs/heads/main/tools/riscv-sim/sim-linux
   elif [[ "$OSTYPE" == "darwin*" ]]; then 
     if [[ "$ARCH" == "arm64" ]]; then
-      wget -O riscv-sim https://github.com/diku-compSys/compSys-e2025/raw/refs/heads/main/tools/riscv-sim/sim-mac
+      curl -L -o riscv-sim https://github.com/diku-compSys/compSys-e2025/raw/refs/heads/main/tools/riscv-sim/sim-mac
     elif [[ "$ARCH" == "x86_64" ]]; then
-      wget -O riscv-sim https://github.com/diku-compSys/compPSys-e2025/raw/refs/heads/main/tools/riscv-sim/sim-mac-x86
+      curl -L -o riscv-sim https://github.com/diku-compSys/compPSys-e2025/raw/refs/heads/main/tools/riscv-sim/sim-mac-x86
     fi
   fi
   chmod +x riscv-sim
