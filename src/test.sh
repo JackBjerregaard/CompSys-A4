@@ -2,14 +2,16 @@
 
 if [ ! -f "./riscv-sim" ]; then
   echo "Getting CompSys simulator..."
-  if [[ "$OSTYPE" == "linux-gnu" ]]; then
+  ARCH=$(uname -m)
+  
+  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     echo "linux"
     curl -L -o riscv-sim https://github.com/diku-compSys/compSys-e2025/raw/refs/heads/main/tools/riscv-sim/sim-linux
-  elif [[ "$OSTYPE" == "darwin*" ]]; then 
+  elif [[ "$OSTYPE" == "darwin"* ]]; then
     if [[ "$ARCH" == "arm64" ]]; then
       curl -L -o riscv-sim https://github.com/diku-compSys/compSys-e2025/raw/refs/heads/main/tools/riscv-sim/sim-mac
     elif [[ "$ARCH" == "x86_64" ]]; then
-      curl -L -o riscv-sim https://github.com/diku-compSys/compPSys-e2025/raw/refs/heads/main/tools/riscv-sim/sim-mac-x86
+      curl -L -o riscv-sim https://github.com/diku-compSys/compSys-e2025/raw/refs/heads/main/tools/riscv-sim/sim-mac-x86
     fi
   fi
   chmod +x riscv-sim
@@ -20,11 +22,13 @@ make
 FAILED=0
 PASSED=0
 
-# P.S. removing summary lines of both outputs, as execution time differs
+# P.S. removing summary lines.
+# Changed 'head -n -1' to "sed '$d'" (delete last line) for Mac compatibility.
 
 # Test simulate.
-./sim ../predictor-benchmarks/fib.elf -- 7 | head -n -1 > simulate.txt 
-./riscv-sim ../predictor-benchmarks/fib.elf -- 7 | head -n -2 > riscv-simulate.txt
+./sim ../predictor-benchmarks/fib.elf -- 7 | sed '$d' > simulate.txt
+./riscv-sim ../predictor-benchmarks/fib.elf -- 7 | sed '$d' | sed '$d' > riscv-simulate.txt
+
 if diff -w simulate.txt riscv-simulate.txt > /dev/null; then
   echo "Passed simulation"
   PASSED=$((PASSED + 1))
@@ -35,12 +39,11 @@ fi
 rm simulate.txt riscv-simulate.txt
 
 # Test simulate log.
-./sim ../predictor-benchmarks/fib.elf -l log -- 7 
-head log -n -1 > log.tmp
-mv log.tmp log
-./riscv-sim ../predictor-benchmarks/fib.elf -l riscv-log -- 7 
-head riscv-log -n -2 > riscv-log.tmp
-mv riscv-log.tmp riscv-log
+./sim ../predictor-benchmarks/fib.elf -l log -- 7
+sed '$d' log > log.tmp && mv log.tmp log 
+./riscv-sim ../predictor-benchmarks/fib.elf -l riscv-log -- 7
+sed '$d' riscv-log | sed '$d' > riscv-log.tmp && mv riscv-log.tmp riscv-log
+
 if diff -w log riscv-log > /dev/null; then
   echo "Passed simulation with log"
   PASSED=$((PASSED + 1))
