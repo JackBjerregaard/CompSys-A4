@@ -135,8 +135,11 @@ void handle_type_I_load(uint32_t instruction, char *result) {
 
 }
 
-void handle_type_I_call(char *result) {
-  sprintf(result, "%s", "ECALL");
+void handle_type_I_call(uint32_t instruction, char *result) {
+  uint32_t f3 = ((instruction >> 12) & 0x7);
+  if (f3 == 0x0) {
+    sprintf(result, "%s", "ECALL");
+  }
 }
 
 void handle_type_I_jump(uint32_t instruction, char *result) {
@@ -340,7 +343,7 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
     handle_type_I_imm(instruction, instruction_text);
     break;
   case 0x73:  // 1110011 - I-type
-    handle_type_I_call(instruction_text);
+    handle_type_I_call(instruction, instruction_text);
     break;
 
   // All S-type
