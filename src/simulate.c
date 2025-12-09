@@ -160,7 +160,7 @@ void predictor_gshare_update(struct BranchInformation *branch) {
   predictor_history = ((predictor_history << 1) | (branch->taken ? 1 : 0)) & (bits - 1);
 }
 
-void simulate_U(struct memory *mem, uint32_t instruction) {
+void simulate_U(uint32_t instruction) {
   uint32_t opcode = instruction & 0x7F;
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t imm = instruction & 0xFFFFF000;
@@ -178,7 +178,7 @@ void simulate_U(struct memory *mem, uint32_t instruction) {
   current += 4;
 }
 
-void simulate_J(struct memory *mem, uint32_t instruction) {
+void simulate_J(uint32_t instruction) {
   uint32_t rd = (instruction >> 7) & 0x1f;
 
   uint32_t imm20 = (instruction >> 31) & 0x1;
@@ -205,7 +205,7 @@ void simulate_J(struct memory *mem, uint32_t instruction) {
   current += (int32_t)imm;
 }
 
-void simulate_B(struct memory *mem, uint32_t instruction) {
+void simulate_B(uint32_t instruction) {
   uint32_t imm_11 = (instruction >> 7) & 0x1;
   uint32_t imm_4_1 = (instruction >> 8) & 0xF;
   uint32_t imm_10_5 = (instruction >> 25) & 0x3F;
@@ -317,11 +317,10 @@ void simulate_B(struct memory *mem, uint32_t instruction) {
   }
 }
 
-void simulate_I_jump(struct memory *mem, uint32_t instruction) {
+void simulate_I_jump(uint32_t instruction) {
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
-  uint32_t f3 = ((instruction >> 12) & 0x7);
 
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x800) {
@@ -352,15 +351,9 @@ void simulate_I_load(struct memory *mem, uint32_t instruction) {
   switch (f3) {
   case 0x0: // LB
     registers[rd] = memory_rd_b(mem, (int32_t)registers[rs1] + imm);
-    if (registers[rd] & 0x80) {
-      registers[rd] |= 0xFFFFFF00;
-    }
     break;
   case 0x1: // LH
     registers[rd] = memory_rd_h(mem, (int32_t)registers[rs1] + imm);
-    if (registers[rd] & 0x8000) {
-      registers[rd] |= 0xFFFF0000;
-    }
     break;
   case 0x2: // LW
     registers[rd] = memory_rd_w(mem, (int32_t)registers[rs1] + imm);
@@ -377,7 +370,7 @@ void simulate_I_load(struct memory *mem, uint32_t instruction) {
   current += 4;
 }
 
-void simulate_I_imm(struct memory *mem, uint32_t instruction) {
+void simulate_I_imm(uint32_t instruction) {
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
@@ -429,12 +422,7 @@ void simulate_I_imm(struct memory *mem, uint32_t instruction) {
   current += 4;
 }
 
-void simulate_I_call(struct memory *mem, uint32_t instruction) {
-  uint32_t rd = (instruction >> 7) & 0x1F;
-  uint32_t imm = ((instruction >> 20) & 0xFFF);
-  uint32_t rs1 = ((instruction >> 15) & 0x1F);
-  uint32_t f3 = ((instruction >> 12) & 0x7);
-
+void simulate_I_call() {
   // Ecall get register A7
   uint32_t ecall = registers[17];
   if (ecall == 1) {
@@ -476,7 +464,7 @@ void simulate_S(struct memory *mem, uint32_t instruction) {
   current += 4;
 }
 
-void simulate_R(struct memory *mem, uint32_t instruction) {
+void simulate_R(uint32_t instruction) {
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t f3 = (instruction >> 12) & 0x7;
   uint32_t rs1 = (instruction >> 15) & 0x1F;
@@ -524,12 +512,12 @@ void simulate_R(struct memory *mem, uint32_t instruction) {
       registers[rd] = (int32_t)registers[rs1] * (int32_t)registers[rs2];
       break;
     case 0x1: { // MULH
-      int64_t mul = (int64_t)registers[rs1] * (int64_t)registers[rs2];
+      int64_t mul = (int64_t)(int32_t)registers[rs1] * (int64_t)(int32_t)registers[rs2];
       registers[rd] = (uint32_t)(mul >> 32); // make sure only 32 bits
       break;
     }
     case 0x2: { // MULSU
-      int64_t mul = (int64_t)registers[rs1] * (uint64_t)registers[rs2];
+      int64_t mul = (int64_t)(int32_t)registers[rs1] * (int64_t)(uint32_t)registers[rs2];
       registers[rd] = (uint32_t)(mul >> 32); // make sure only 32 bits
       break;
     }
@@ -587,34 +575,34 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
     switch (opcode) {
     case 0x37: // 0110111 - U-type
     case 0x17: // 0010111 - U-type
-      simulate_U(mem, instruction);
+      simulate_U(instruction);
       break;
     case 0x6F: // 1101111 - J-type
-      simulate_J(mem, instruction);
+      simulate_J(instruction);
       break;
     case 0x63: // 1100011 - B-type
-      simulate_B(mem, instruction);
+      simulate_B(instruction);
       break;
 
     // All I-type
     case 0x67: // 1100111 - I-type
-      simulate_I_jump(mem, instruction);
+      simulate_I_jump(instruction);
       break;
     case 0x03: // 0000011 - I-type
       simulate_I_load(mem, instruction);
       break;
     case 0x13: // 0010011 - I-type
-      simulate_I_imm(mem, instruction);
+      simulate_I_imm(instruction);
       break;
     case 0x73: // 1110011 - I-type
-      simulate_I_call(mem, instruction);
+      simulate_I_call();
       break;
 
     case 0x23: // 0100011 - S-type
       simulate_S(mem, instruction);
       break;
     case 0x33: // 0110011 - R-type
-      simulate_R(mem, instruction);
+      simulate_R(instruction);
       break;
     }
 

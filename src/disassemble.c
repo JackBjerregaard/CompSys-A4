@@ -135,26 +135,14 @@ void handle_type_I_load(uint32_t instruction, char *result) {
 
 }
 
-void handle_type_I_call(uint32_t instruction, char *result) {
-  uint32_t rd = (instruction >> 7) & 0x1F;
-  uint32_t imm = ((instruction >> 20) & 0xFFF);
-  uint32_t rs1 = ((instruction >> 15) & 0x1F);
-  uint32_t f3 = ((instruction >> 12) & 0x7);
-
-  switch (f3) {
-  case 0x0:
-    sprintf(result, "%s", "ECALL");
-    break;
-  default:
-    break;
-  }
+void handle_type_I_call(char *result) {
+  sprintf(result, "%s", "ECALL");
 }
 
-void handle_type_I_jump(uint32_t instruction, char *result, uint32_t addr) {
+void handle_type_I_jump(uint32_t instruction, char *result) {
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
-  uint32_t f3 = ((instruction >> 12) & 0x7);
 
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x800) {
@@ -342,7 +330,7 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
 
   // All I-type
   case 0x67:  // 1100111 - I-type
-    handle_type_I_jump(instruction, instruction_text, addr);
+    handle_type_I_jump(instruction, instruction_text);
     break;
 
   case 0x03:  // 0000011 - I-type
@@ -352,7 +340,7 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
     handle_type_I_imm(instruction, instruction_text);
     break;
   case 0x73:  // 1110011 - I-type
-    handle_type_I_call(instruction, instruction_text);
+    handle_type_I_call(instruction_text);
     break;
 
   // All S-type
