@@ -27,6 +27,7 @@ long int predictions = 0;
 long int mispredictions = 0;
 char *table_choose = NULL;
 uint8_t *table = NULL;
+uint32_t predictor_history = 0;
 
 int running = 1;
 int current;
@@ -55,10 +56,10 @@ void predictor_btfnt_update(struct BranchInformation *branch) {
   predictions++;
 
   int prediction;
-  if (branch->offset < 0) { //if offset <0 - loop, most likey branch is taken
+  if (branch->offset < 0) { // if offset <0 - loop, most likey branch is taken
     prediction = 1;
-  } else { //branch target is forward
-    prediction = 0; 
+  } else { // branch target is forward
+    prediction = 0;
   }
   // check if it happens
   if (prediction != branch->taken) {
@@ -70,32 +71,34 @@ void predictor_bimodal_update(struct BranchInformation *branch) {
   predictions++;
 
   int index_bits;
-  if (strcmp(table_choose, "tiny") == 0) index_bits = 2;
-  else if (strcmp(table_choose, "256") == 0) index_bits = 8; 
-  else if (strcmp(table_choose, "1k") == 0) index_bits = 10; 
-  else if (strcmp(table_choose, "4k") == 0) index_bits = 12; 
-  else if (strcmp(table_choose, "16k") == 0) index_bits = 14; 
+  if (strcmp(table_choose, "tiny") == 0)
+    index_bits = 2;
+  else if (strcmp(table_choose, "256") == 0)
+    index_bits = 8;
+  else if (strcmp(table_choose, "1k") == 0)
+    index_bits = 10;
+  else if (strcmp(table_choose, "4k") == 0)
+    index_bits = 12;
+  else if (strcmp(table_choose, "16k") == 0)
+    index_bits = 14;
   else {
     fprintf(stderr, "Unknown table size: '%s'\n", table_choose);
     return;
   }
 
-  // convert to bits
   int bits = 1 << index_bits;
 
-  // initiatlise table 
   if (table == NULL) {
     table = (uint8_t *)calloc(bits, sizeof(uint8_t));
     for (int i = 0; i < bits; i++) {
-      table[i] = 1; // default to weakly not taken bits: 01
+      table[i] = 1;
     }
   }
 
-  // only get last 2 bits
-  uint32_t index = (branch->pc >> 2) & (bits - 1); 
+  uint32_t index = (branch->pc >> 2) & (bits - 1);
 
   // if type taken, then set to 1, otherwise keep 0 for NT types
-  int prediction = (table[index] >= 2) ? 1 : 0; 
+  int prediction = (table[index] >= 2) ? 1 : 0;
 
   if (prediction != branch->taken) {
     mispredictions++;
@@ -110,6 +113,58 @@ void predictor_bimodal_update(struct BranchInformation *branch) {
       table[index]--;
     }
   }
+}
+
+void predictor_gshare_update(struct BranchInformation *branch) {
+  predictions++;
+
+  int index_bits;
+  if (strcmp(table_choose, "256") == 0)
+    index_bits = 8;
+  else if (strcmp(table_choose, "1k") == 0)
+    index_bits = 10;
+  else if (strcmp(table_choose, "4k") == 0)
+    index_bits = 12;
+  else if (strcmp(table_choose, "16k") == 0)
+    index_bits = 14;
+  else {
+    fprintf(stderr, "Unknown table size: '%s'\n", table_choose);
+    return;
+  }
+
+  int bits = 1 << index_bits;
+
+  if (table == NULL) {
+    table = (uint8_t *)calloc(bits, sizeof(uint8_t));
+    for (int i = 0; i < bits; i++) {
+      table[i] = 1;
+    }
+  }
+
+  uint32_t index = ((branch->pc >> 2) ^ predictor_history) & (bits - 1);
+
+  // if type taken, then set to 1, otherwise keep 0 for NT types
+  int prediction;
+  if (table[index] >= 2) {
+    prediction = 1;
+  } else {
+    prediction = 0;
+  }
+
+  if (prediction != branch->taken) {
+    mispredictions++;
+  }
+
+  if (branch->taken) {
+    if (table[index] < 3) {
+      table[index]++;
+    }
+  } else {
+    if (table[index] > 0) {
+      table[index]--;
+    }
+  }
+  predictor_history = ((predictor_history << 1) | (branch->taken ? 1 : 0)) & (bits - 1);
 }
 
 void simulate_U(struct memory *mem, uint32_t instruction) {
@@ -264,6 +319,8 @@ void simulate_B(struct memory *mem, uint32_t instruction) {
     predictor_btfnt_update(&branch);
   } else if (which_predictor == 3) {
     predictor_bimodal_update(&branch);
+  } else if (which_predictor == 4) {
+    predictor_gshare_update(&branch);
   }
 }
 
@@ -508,8 +565,6 @@ void simulate_R(struct memory *mem, uint32_t instruction) {
 }
 
 struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct symbols *symbols) {
-  predictions = 0;
-  mispredictions = 0;
   long int insn_count = 0;
   current = start_addr;
   strcpy(jump_str, "=>");
@@ -518,6 +573,10 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
   for (int i = 1; i < 32; i++) {
     registers[i] = 0xFFFFFFFF;
   }
+
+  predictions = 0;
+  mispredictions = 0;
+  predictor_history = 0;
 
   while (running) {
     registers[0] = 0;
@@ -584,7 +643,7 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
     printf("Total branches: %ld\n", predictions);
     printf("Mispredictions: %ld\n", mispredictions);
     printf("Accuracy: %.2f%%\n", 100.0 * (predictions - mispredictions) / predictions);
-  } 
+  }
   free(table);
   table = NULL;
   return (struct Stat){.insns = insn_count};
