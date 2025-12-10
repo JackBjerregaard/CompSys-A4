@@ -15,14 +15,14 @@ const char *REGISTERS_NAMES[] = {"zero", "ra", "sp",  "gp",  "tp", "t0", "t1", "
                                  "s8",   "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
 
 struct BranchInformation {
-  uint32_t pc;    // adress of branch instruction
-  int32_t offset; // for BFNT
+  uint32_t pc;
+  int32_t offset;
   uint32_t target;
   int taken;
 };
 
-// predictor
-int which_predictor = 0; // 1=NT, 2 = BFNT //1=NT, 2 = BFNT
+// Predictor
+int which_predictor = 0;
 long int predictions = 0;
 long int mispredictions = 0;
 char *table_choose = NULL;
@@ -37,16 +37,15 @@ char jump_str[10] = {0};
 
 // Helper function for logging whenever a reg is edited
 void log_register_edit(uint32_t rd) {
-  if (rd != 0) { // writing to 0 is always zero
+  if (rd != 0) {
     sprintf(log_str, "R[%2d] <- %x", rd, registers[rd]);
   }
 }
 
 void predictor_nt_update(struct BranchInformation *branch) {
   predictions++;
-  int prediction = 0; // assume it wasnt taken to begin with
+  int prediction = 0;
 
-  // check if it happens
   if (prediction != branch->taken) {
     mispredictions++;
   };
@@ -56,12 +55,11 @@ void predictor_btfnt_update(struct BranchInformation *branch) {
   predictions++;
 
   int prediction;
-  if (branch->offset < 0) { // if offset <0 - loop, most likey branch is taken
+  if (branch->offset < 0) {
     prediction = 1;
-  } else { // branch target is forward
+  } else {
     prediction = 0;
   }
-  // check if it happens
   if (prediction != branch->taken) {
     mispredictions++;
   };
@@ -95,7 +93,7 @@ void predictor_bimodal_update(struct BranchInformation *branch) {
 
   uint32_t index = (branch->pc >> 2) & (bits - 1);
 
-  // if type taken, then set to 1, otherwise keep 0 for NT types
+  // If type taken, then set to 1, otherwise keep 0 for NT types
   int prediction = (table[index] >= 2) ? 1 : 0;
 
   if (prediction != branch->taken) {
@@ -141,7 +139,7 @@ void predictor_gshare_update(struct BranchInformation *branch) {
 
   uint32_t index = ((branch->pc >> 2) ^ predictor_history) & (bits - 1);
 
-  // if type taken, then set to 1, otherwise keep 0 for NT types
+  // Ff type taken, then set to 1, otherwise keep 0 for NT types
   int prediction = (table[index] >= 2) ? 1 : 0;
 
   if (prediction != branch->taken) {
@@ -324,8 +322,6 @@ void simulate_I_jump(uint32_t instruction) {
 
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x800) {
-    // Set all other bits after the imm bits to 1 to indicate negative (two's
-    // complement)
     imm |= 0xFFFFF000;
   }
 
@@ -343,8 +339,6 @@ void simulate_I_load(struct memory *mem, uint32_t instruction) {
 
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x800) {
-    // Set all other bits after the imm bits to 1 to indicate negative (two's
-    // complement)
     imm |= 0xFFFFF000;
   }
 
@@ -380,8 +374,6 @@ void simulate_I_imm(uint32_t instruction) {
 
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x800) {
-    // Set all other bits after the imm bits to 1 to indicate negative (two's
-    // complement)
     imm |= 0xFFFFF000;
   }
 
@@ -426,11 +418,11 @@ void simulate_I_call() {
   // Ecall get register A7
   uint32_t ecall = registers[17];
   if (ecall == 1) {
-    registers[10] = getchar(); // put char in a0
+    registers[10] = getchar();
   } else if (ecall == 2) {
-    putchar(registers[10]); // get a0 and put char
+    putchar(registers[10]);
   } else if (ecall == 3 || ecall == 93) {
-    running = 0; // stop simulation
+    running = 0;
   }
   current += 4;
 }
@@ -583,8 +575,6 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
     case 0x63: // 1100011 - B-type
       simulate_B(instruction);
       break;
-
-    // All I-type
     case 0x67: // 1100111 - I-type
       simulate_I_jump(instruction);
       break;
@@ -597,7 +587,6 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
     case 0x73: // 1110011 - I-type
       simulate_I_call();
       break;
-
     case 0x23: // 0100011 - S-type
       simulate_S(mem, instruction);
       break;
@@ -606,13 +595,12 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
       break;
     }
 
-    // print after to make sure we have current instr
+    // Print after to make sure we have current instruction
     if (log_file) {
       fprintf(log_file, "  %5ld %2s %8x : %08x       %-60s %s\n", insn_count, jump_str, instr_addr,
               instruction, disassembly, log_str);
       strcpy(log_str, "");
     }
-
     if (current != old_current + 4) {
       strcpy(jump_str, "=>");
     } else {

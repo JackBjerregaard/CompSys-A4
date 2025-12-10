@@ -51,7 +51,7 @@ void handle_type_J(uint32_t instruction, char *result, uint32_t addr) {
   // Use pseudo instruction CALL and J instead of JAL to match handed out sim output
   if (rd == 0) { // for empty returns
     sprintf(result, "J %x", (imm + addr));
-  } else if (rd == 1) { // for function calls
+  } else if (rd == 1) {
     sprintf(result, "CALL %x", (imm + addr));
   } else {
     sprintf(result + strlen(result), "%s %s, %x", "JAL", REGISTERS[rd], (imm + addr));
@@ -72,7 +72,6 @@ void handle_type_B(uint32_t instruction, char *result, uint32_t addr) {
 
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x1000) {
-    // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
     imm |= 0xFFFFE000;
   }
 
@@ -109,7 +108,6 @@ void handle_type_I_load(uint32_t instruction, char *result) {
 
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x800) {
-    // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
     imm |= 0xFFFFF000;
   }
 
@@ -149,11 +147,11 @@ void handle_type_I_jump(uint32_t instruction, char *result) {
 
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x800) {
-    // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
     imm |= 0xFFFFF000;
   }
   
-  if (rd == 0 && rs1 == 1 && imm == 0) { // Use RET for jumps to return address and discarding value
+  // Use RET for jumps to return address and discarding value
+  if (rd == 0 && rs1 == 1 && imm == 0) {
     sprintf(result, "RET");
   } else {
     sprintf(result, "%s %s, %d(%s)", "JALR", REGISTERS[rd], (int32_t)imm, REGISTERS[rs1]);
@@ -170,7 +168,6 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
 
   // check the last bit of imm and check if we need to set negative
   if (imm & 0x800) {
-    // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
     imm |= 0xFFFFF000;
   }
 
@@ -318,7 +315,8 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
   char instruction_text[buf_size];
   memset(instruction_text, 0, buf_size);
 
-  uint32_t opcode = instruction & 0x7F; // takes the opcode from [0:6]
+  // Upcode from [6:0]
+  uint32_t opcode = instruction & 0x7F;
   switch (opcode) {
   case 0x37:  // 0110111 - U-type
   case 0x17:  // 0010111 - U-type
@@ -330,8 +328,6 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
   case 0x63:  // 1100011 - B-type
     handle_type_B(instruction, instruction_text, addr);
     break;
-
-  // All I-type
   case 0x67:  // 1100111 - I-type
     handle_type_I_jump(instruction, instruction_text);
     break;
@@ -345,13 +341,9 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
   case 0x73:  // 1110011 - I-type
     handle_type_I_call(instruction, instruction_text);
     break;
-
-  // All S-type
   case 0x23:  // 0100011 - S-type
     handle_type_S(instruction, instruction_text);
     break;
-  
-  // All R-type
   case 0x33:  // 0110011 - R-type
     handle_type_R(instruction, instruction_text);
     break;
