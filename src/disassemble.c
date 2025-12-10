@@ -6,6 +6,7 @@
 #include "disassemble.h"
 #include "read_elf.h"
 
+// Register names for RISC-V
 const char *REGISTERS[] = {
   "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
   "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
@@ -13,6 +14,7 @@ const char *REGISTERS[] = {
   "t3", "t4", "t5", "t6"
 };
 
+// Handle U-type instruction for LUI, AUIPC
 void handle_type_U(uint32_t instruction, char *result) {
   uint32_t opcode = instruction & 0x7F;
   uint32_t rd = (instruction >> 7) & 0x1F;
@@ -28,6 +30,7 @@ void handle_type_U(uint32_t instruction, char *result) {
   }
 }
 
+// Handle J-type instructions for JAL
 void handle_type_J(uint32_t instruction, char *result, uint32_t addr) {
   uint32_t rd = (instruction >> 7) & 0x1f;
 
@@ -42,9 +45,8 @@ void handle_type_J(uint32_t instruction, char *result, uint32_t addr) {
   imm |= (imm_11 << 11);
   imm |= (imm_10_1 << 1);
 
-  // check the last bit of imm and check if we need to set negative
+  // Sign extend from bit 20
   if (imm & 0x100000) {
-    // Set all other bits after the imm bits to 1 to indicate negative (two's complement)
     imm |= 0xFFE00000;
   }
 
@@ -58,6 +60,7 @@ void handle_type_J(uint32_t instruction, char *result, uint32_t addr) {
   }
 }
 
+// Handle B-type instruction BEQ, BNE, BLT, BGE, BLTU, BGEU
 void handle_type_B(uint32_t instruction, char *result, uint32_t addr) {
   uint32_t imm_11 = (instruction >> 7) & 0x1;
   uint32_t imm_4_1 = (instruction >> 8) & 0xF;
@@ -70,7 +73,7 @@ void handle_type_B(uint32_t instruction, char *result, uint32_t addr) {
   imm |= (imm_10_5 << 5);
   imm |= (imm_4_1 << 1);
 
-  // check the last bit of imm and check if we need to set negative
+  // Sign extend from bit 12
   if (imm & 0x1000) {
     imm |= 0xFFFFE000;
   }
@@ -100,13 +103,14 @@ void handle_type_B(uint32_t instruction, char *result, uint32_t addr) {
   }
 }
 
+// Handle I-type load instructions LB, LH, LW, LBU, LHU
 void handle_type_I_load(uint32_t instruction, char *result) {
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
   uint32_t f3 = ((instruction >> 12) & 0x7);
 
-  // check the last bit of imm and check if we need to set negative
+  // Sign extend 12 bit immediate
   if (imm & 0x800) {
     imm |= 0xFFFFF000;
   }
@@ -133,6 +137,7 @@ void handle_type_I_load(uint32_t instruction, char *result) {
 
 }
 
+// Hadle I-type system call ECALL
 void handle_type_I_call(uint32_t instruction, char *result) {
   uint32_t f3 = ((instruction >> 12) & 0x7);
   if (f3 == 0x0) {
@@ -140,12 +145,13 @@ void handle_type_I_call(uint32_t instruction, char *result) {
   }
 }
 
+// Handle I-type jump JALR
 void handle_type_I_jump(uint32_t instruction, char *result) {
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t imm = ((instruction >> 20) & 0xFFF);
   uint32_t rs1 = ((instruction >> 15) & 0x1F);
 
-  // check the last bit of imm and check if we need to set negative
+  // Sign extend 12 bit immediate
   if (imm & 0x800) {
     imm |= 0xFFFFF000;
   }
@@ -158,6 +164,7 @@ void handle_type_I_jump(uint32_t instruction, char *result) {
   }
 }
 
+// Handle I-type immediate operations ADDI, XORI, ORI, ANDI, SLII, SRLI, SLTI, SLTIU
 void handle_type_I_imm(uint32_t instruction, char *result) {
   uint32_t rd = (instruction >> 7) & 0x1F;
   uint32_t imm = ((instruction >> 20) & 0xFFF);
@@ -166,7 +173,7 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
   uint32_t f7 = (instruction >> 25) & 0x7F; 
   uint32_t shamt = (instruction >> 20) & 0x1F;
 
-  // check the last bit of imm and check if we need to set negative
+  // Sign extend 12 bit immediate
   if (imm & 0x800) {
     imm |= 0xFFFFF000;
   }
@@ -207,6 +214,7 @@ void handle_type_I_imm(uint32_t instruction, char *result) {
   }
 }
 
+// Handle S-type instructions SB, SH, SW
 void handle_type_S(uint32_t instruction, char *result) {
   uint32_t imm_11_5 = (instruction >> 25) & 0x7F;
   uint32_t imm_4_0 = (instruction >> 7) & 0x1F;
@@ -215,6 +223,7 @@ void handle_type_S(uint32_t instruction, char *result) {
   uint32_t rs1 = (instruction >> 15) & 0x1F; 
   uint32_t rs2 = (instruction >> 20) & 0x1F;
  
+  // Sign extend 12 bit immediate
   if (imm & 0x800) {
     imm |= 0xFFFFF000;
   }
@@ -306,10 +315,11 @@ void handle_type_R(uint32_t instruction, char *result) {
   }
 }
 
+// Main disassembly fuction
 void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_size,
                  struct symbols *symbols) {
 
-  // Reset result string so it doesn't contain the previous instruction
+  // Reset result string
   memset(result, '\0', buf_size);
 
   char instruction_text[buf_size];
@@ -353,7 +363,7 @@ void disassemble(uint32_t addr, uint32_t instruction, char *result, size_t buf_s
   }
 
 
-  // Add the symbol to result, if applicable
+  // Format output with symbol name if available
   const char *symbol = symbols_value_to_sym(symbols, addr);
   if (symbol != NULL) {
     sprintf(result, "%-20s:   %s", symbol, instruction_text);
