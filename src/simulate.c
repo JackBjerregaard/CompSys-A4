@@ -9,11 +9,6 @@
 #include "read_elf.h"
 #include "simulate.h"
 
-const char *REGISTERS_NAMES[] = {"zero", "ra", "sp",  "gp",  "tp", "t0", "t1", "t2",
-                                 "s0",   "s1", "a0",  "a1",  "a2", "a3", "a4", "a5",
-                                 "a6",   "a7", "s2",  "s3",  "s4", "s5", "s6", "s7",
-                                 "s8",   "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
-
 struct BranchInformation {
   uint32_t pc;
   int32_t offset;
@@ -28,6 +23,7 @@ long int mispredictions = 0;
 char *table_choose = NULL;
 uint8_t *table = NULL;
 uint32_t predictor_history = 0; 
+const char *predictor_names[] = {"NT", "BTFNT", "Bimodal", "gShare"};
 
 int running = 1;
 int current;
@@ -79,6 +75,7 @@ void predictor_bimodal_update(struct BranchInformation *branch) {
     index_bits = 14;
   else {
     fprintf(stderr, "Unknown table size: '%s'\n", table_choose);
+    running = 0;
     return;
   }
 
@@ -608,7 +605,12 @@ struct Stat simulate(struct memory *mem, int start_addr, FILE *log_file, struct 
     }
   }
   if (which_predictor != 0) {
-    printf("predictor: %d %s\n", which_predictor, table_choose);
+    if (which_predictor <= 2) {
+      printf("predictor: %s\n", predictor_names[which_predictor-1]);
+    } else if (which_predictor > 2) {
+      printf("predictor: %s %s\n", predictor_names[which_predictor-1], table_choose);
+    }
+    
     printf("Total branches: %ld\n", predictions);
     printf("Mispredictions: %ld\n", mispredictions);
     printf("Accuracy: %.2f%%\n", 100.0 * (predictions - mispredictions) / predictions);
