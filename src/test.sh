@@ -23,84 +23,83 @@ FAILED=0
 PASSED=0
 
 # P.S. removing summary lines.
-# Changed 'head -n -1' to "sed '$d'" (delete last line) for Mac compatibility.
 
-# Test simulate.
+# Test simulate (fib).
 ./sim ../predictor-benchmarks/fib.elf -- 7 | sed '$d' > simulate.txt
 ./riscv-sim ../predictor-benchmarks/fib.elf -- 7 | sed '$d' | sed '$d' > riscv-simulate.txt
 
 if diff -w simulate.txt riscv-simulate.txt > /dev/null; then
-  echo "Passed simulation"
+  echo "Passed simulation (fib)"
   PASSED=$((PASSED + 1))
 else
-  echo "Failed simulation"
+  echo "Failed simulation (fib)"
   FAILED=$((FAILED + 1))
 fi
 rm simulate.txt riscv-simulate.txt
 
-# Test simulate log.
-./sim ../predictor-benchmarks/fib.elf -l log -- 7
+# Test simulate log (fib).
+./sim ../predictor-benchmarks/fib.elf -l log -- 7 > /dev/null
 sed '$d' log > log.tmp && mv log.tmp log 
-./riscv-sim ../predictor-benchmarks/fib.elf -l riscv-log -- 7
+./riscv-sim ../predictor-benchmarks/fib.elf -l riscv-log -- 7 > /dev/null
 sed '$d' riscv-log | sed '$d' > riscv-log.tmp && mv riscv-log.tmp riscv-log
 
 if diff -w log riscv-log > /dev/null; then
-  echo "Passed simulation with log"
+  echo "Passed simulation with log (fib)"
   PASSED=$((PASSED + 1))
 else
-  echo "Failed simulation with log"
+  echo "Failed simulation with log (fib)"
   FAILED=$((FAILED + 1))
 fi
 rm log riscv-log
 
-# Test disassemble
-./sim ../predictor-benchmarks/fib.elf -d > disassemble.txt
-./riscv-sim ../predictor-benchmarks/fib.elf -d > riscv-disassemble.txt
+# Test disassemble (fib)
+./sim ../predictor-benchmarks/fib.elf -d -- 7 > disassemble.txt
+./riscv-sim ../predictor-benchmarks/fib.elf -d -- 7 > riscv-disassemble.txt
 if diff -w disassemble.txt riscv-disassemble.txt > /dev/null; then
-  echo "Passed disassemble"
+  echo "Passed disassemble (fib)"
   PASSED=$((PASSED + 1))
 else
-  echo "Failed disassemble"
+  echo "Failed disassemble (fib)"
   FAILED=$((FAILED + 1))
 fi
 rm disassemble.txt riscv-disassemble.txt
 
-# Test simulate.
-./sim ../predictor-benchmarks/erat.elf -- 7 | sed '$d' > simulate.txt
-./riscv-sim ../predictor-benchmarks/erat.elf -- 7 | sed '$d' | sed '$d' > riscv-simulate.txt
+# Test simulate (erat)
+./sim ../predictor-benchmarks/erat.elf | sed '$d' > simulate.txt
+./riscv-sim ../predictor-benchmarks/erat.elf | sed '$d' | sed '$d' > riscv-simulate.txt
 
 if diff -w simulate.txt riscv-simulate.txt > /dev/null; then
-  echo "Passed simulation"
+  echo "Passed simulation (erat)"
   PASSED=$((PASSED + 1))
 else
-  echo "Failed simulation"
+  echo "Failed simulation (erat)"
   FAILED=$((FAILED + 1))
 fi
 rm simulate.txt riscv-simulate.txt
 
-# Test simulate log.
-./sim ../predictor-benchmarks/erat.elf -l log -- 7
+# Test simulate log (erat)
+./sim ../predictor-benchmarks/erat.elf -l log > /dev/null
 sed '$d' log > log.tmp && mv log.tmp log
-./riscv-sim ../predictor-benchmarks/erat.elf -l riscv-log -- 7
+./riscv-sim ../predictor-benchmarks/erat.elf -l riscv-log > /dev/null
 sed '$d' riscv-log | sed '$d' > riscv-log.tmp && mv riscv-log.tmp riscv-log
 
 if diff -w log riscv-log > /dev/null; then
-  echo "Passed simulation with log"
+  echo "Passed simulation with log (erat)"
   PASSED=$((PASSED + 1))
 else
-  echo "Failed simulation with log"
+  echo "Failed simulation with log (erat)"
   FAILED=$((FAILED + 1))
 fi
 rm log riscv-log
 
-# Test disassemble
+# Test disassemble (erat)
 ./sim ../predictor-benchmarks/erat.elf -d > disassemble.txt
 ./riscv-sim ../predictor-benchmarks/erat.elf -d > riscv-disassemble.txt
 if diff -w disassemble.txt riscv-disassemble.txt > /dev/null; then
-  echo "Passed disassemble"
+  echo "Passed disassemble (erat)"
   PASSED=$((PASSED + 1))
 else
-  echo "Failed disassemble"
+  echo "Failed disassemble (erat)"
   FAILED=$((FAILED + 1))
 fi
 rm disassemble.txt riscv-disassemble.txt
